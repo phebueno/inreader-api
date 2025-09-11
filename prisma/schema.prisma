@@ -14,6 +14,8 @@ model User {
   password  String
   createdAt DateTime   @default(now())
   documents Document[]
+
+  @@map("users")
 }
 
 model Document {
@@ -27,6 +29,8 @@ model Document {
   interactions  AiCompletion[]
   processedAt   DateTime?
   createdAt     DateTime       @default(now())
+
+  @@map("documents")
 }
 
 model Transcription {
@@ -35,6 +39,8 @@ model Transcription {
   documentId String   @unique
   text       String   @db.Text
   createdAt  DateTime @default(now())
+
+  @@map("transcriptions")
 }
 
 model AiCompletion {
@@ -45,6 +51,8 @@ model AiCompletion {
   response   String   @db.Text
   tokensUsed Int?
   createdAt  DateTime @default(now())
+
+  @@map("aiCompletions")
 }
 
 enum DocumentStatus {
