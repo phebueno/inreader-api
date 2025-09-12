@@ -28,6 +28,20 @@ export class TranscriptionsService {
     return ret.data.text;
   }
 
+    async getVerifiedTranscription(userId: string, transcriptionId: string) {
+    const transcription = await this.prisma.transcription.findUnique({
+      where: { id: transcriptionId },
+      include: { document: true },
+    });
+
+    if (!transcription) throw new NotFoundException('Transcription not found');
+    if (transcription.document.userId !== userId) {
+      throw new ForbiddenException('You do not own this transcription');
+    }
+
+    return transcription;
+  }
+
   async transcribeDocument(userId: string, documentId: string) {
     const document = await this.prisma.document.findUnique({
       where: { id: documentId },

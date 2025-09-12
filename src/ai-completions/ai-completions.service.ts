@@ -6,12 +6,16 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { API_GEMINI_KEY } from 'src/constants/constants';
+import { TranscriptionsService } from 'src/transcriptions/transcriptions.service';
 
 @Injectable()
 export class AiCompletionsService {
   private genAI: GoogleGenerativeAI;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private transcriptionService: TranscriptionsService,
+  ) {
     this.genAI = new GoogleGenerativeAI(API_GEMINI_KEY);
   }
 
@@ -20,14 +24,11 @@ export class AiCompletionsService {
     transcriptionId: string,
     prompt: string,
   ) {
-    const transcription = await this.prisma.transcription.findUnique({
-      where: { id: transcriptionId },
-      include: { document: true },
-    });
-    if (!transcription) throw new NotFoundException('Transcription not found');
-    if (transcription.document.userId !== userId) {
-      throw new ForbiddenException('You do not own this transcription');
-    }
+    const transcription =
+      await this.transcriptionService.getVerifiedTranscription(
+        userId,
+        transcriptionId,
+      );
 
     const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
@@ -49,14 +50,10 @@ export class AiCompletionsService {
   }
 
   async findAllByTranscription(userId: string, transcriptionId: string) {
-    const transcription = await this.prisma.transcription.findUnique({
-      where: { id: transcriptionId },
-      include: { document: true },
-    });
-    if (!transcription) throw new NotFoundException('Transcription not found');
-    if (transcription.document.userId !== userId) {
-      throw new ForbiddenException('You do not own this transcription');
-    }
+    await this.transcriptionService.getVerifiedTranscription(
+      userId,
+      transcriptionId,
+    );
 
     return this.prisma.aiCompletion.findMany({
       where: { transcriptionId },
@@ -70,14 +67,10 @@ export class AiCompletionsService {
     });
     if (!aiCompletion) throw new NotFoundException('AiCompletion not found');
 
-    const transcription = await this.prisma.transcription.findUnique({
-      where: { id: aiCompletion.transcriptionId },
-      include: { document: true },
-    });
-
-    if (transcription.document.userId !== userId) {
-      throw new ForbiddenException('You do not own this AiCompletion');
-    }
+    await this.transcriptionService.getVerifiedTranscription(
+      userId,
+      aiCompletion.transcriptionId,
+    );
 
     return aiCompletion;
   }
