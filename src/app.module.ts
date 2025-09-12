@@ -6,7 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { jwtConstants } from 'src/constants/jwt.constants';
+import { jwtConstants } from 'src/constants/constants';
 import { DocumentsModule } from './documents/documents.module';
 import { TranscriptionsModule } from './transcriptions/transcriptions.module';
 
