@@ -26,7 +26,6 @@ model Document {
   mimeType      String
   status        DocumentStatus @default(PENDING)
   transcription Transcription?
-  interactions  AiCompletion[]
   processedAt   DateTime?
   createdAt     DateTime       @default(now())
 
@@ -34,23 +33,24 @@ model Document {
 }
 
 model Transcription {
-  id         String   @id @default(uuid())
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  documentId String   @unique
-  text       String   @db.Text
-  createdAt  DateTime @default(now())
+  id            String         @id @default(uuid())
+  document      Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId    String         @unique
+  text          String         @db.Text
+  createdAt     DateTime       @default(now())
+  aiCompletions AiCompletion[]
 
   @@map("transcriptions")
 }
 
 model AiCompletion {
-  id         String   @id @default(uuid())
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  documentId String
-  prompt     String   @db.Text
-  response   String   @db.Text
-  tokensUsed Int?
-  createdAt  DateTime @default(now())
+  id              String        @id @default(uuid())
+  transcription   Transcription @relation(fields: [transcriptionId], references: [id], onDelete: Cascade)
+  transcriptionId String
+  prompt          String        @db.Text
+  response        String        @db.Text
+  tokensUsed      Int?
+  createdAt       DateTime      @default(now())
 
   @@map("aiCompletions")
 }
