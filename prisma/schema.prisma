@@ -35,7 +35,7 @@ model Document {
 
 model Transcription {
   id         String   @id @default(uuid())
-  document   Document @relation(fields: [documentId], references: [id])
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   documentId String   @unique
   text       String   @db.Text
   createdAt  DateTime @default(now())
@@ -45,7 +45,7 @@ model Transcription {
 
 model AiCompletion {
   id         String   @id @default(uuid())
-  document   Document @relation(fields: [documentId], references: [id])
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   documentId String
   prompt     String   @db.Text
   response   String   @db.Text
