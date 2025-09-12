@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from 'src/constants/jwt.constants';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -15,7 +16,8 @@ import { jwtConstants } from 'src/constants/jwt.constants';
     UsersModule,
     ConfigModule.forRoot({
       isGlobal: true,
-    }),  
+    }),
+    DocumentsModule,  
   ],
   controllers: [AppController],
   providers: [AppService],
