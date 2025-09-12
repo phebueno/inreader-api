@@ -9,6 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from 'src/constants/constants';
 import { DocumentsModule } from './documents/documents.module';
 import { TranscriptionsModule } from './transcriptions/transcriptions.module';
+import { AiCompletionsModule } from './ai-completions/ai-completions.module';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { TranscriptionsModule } from './transcriptions/transcriptions.module';
       isGlobal: true,
     }),
     DocumentsModule,
-    TranscriptionsModule,  
+    TranscriptionsModule,
+    AiCompletionsModule,  
   ],
   controllers: [AppController],
   providers: [AppService],

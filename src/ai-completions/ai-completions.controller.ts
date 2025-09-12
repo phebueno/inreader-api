@@ -1,0 +1,47 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { AiCompletionsService } from './ai-completions.service';
+import { AuthGuard } from 'src/auth/guards/auth.guard';
+
+@Controller('ai-completions')
+@UseGuards(AuthGuard)
+export class AiCompletionsController {
+  constructor(private readonly aiCompletionsService: AiCompletionsService) {}
+
+  @Post()
+  async create(
+    @Body('transcriptionId') transcriptionId: string,
+    @Body('prompt') prompt: string,
+    @Req() req: any,
+  ) {
+    return this.aiCompletionsService.createAiCompletion(
+      req.user.sub,
+      transcriptionId,
+      prompt,
+    );
+  }
+
+  @Get('transcription/:transcriptionId')
+  async findAllByTranscription(
+    @Param('transcriptionId') transcriptionId: string,
+    @Req() req: any,
+  ) {
+    return this.aiCompletionsService.findAllByTranscription(
+      req.user.sub,
+      transcriptionId,
+    );
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string, @Req() req: any) {
+    return this.aiCompletionsService.findOne(req.user.sub, id);
+  }
+}

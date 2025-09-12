@@ -1,30 +1,15 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { API_GEMINI_KEY } from 'src/constants/constants';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { createWorker } from 'tesseract.js';
 
 @Injectable()
 export class TranscriptionsService {
-  private genAI: GoogleGenerativeAI;
-
-  constructor(private prisma: PrismaService) {
-    this.genAI = new GoogleGenerativeAI(API_GEMINI_KEY);
-  }
-
-  private async interpretWithGemini(text: string, prompt = 'Resuma o seguinte texto em tópicos claros e objetivos:') {
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    const result = await model.generateContent(`${prompt}\n\n${text}`);
-    const response = await result.response;
-
-    return response.text();
-  }
+  constructor(private prisma: PrismaService) {}
 
   private async extractTextFromImage(filePath: string) {
     const path = require('path');
@@ -66,10 +51,6 @@ export class TranscriptionsService {
     }
 
     const text = await this.extractTextFromImage(document.key);
-
-    const interpretation = await this.interpretWithGemini(text);
-
-    console.log(interpretation)
 
     const transcription = await this.prisma.transcription.create({
       data: {
