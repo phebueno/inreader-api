@@ -12,12 +12,12 @@ import {
   Req,
 } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
-import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { randomUUID } from 'crypto';
+import { extname } from 'path';
 
 @Controller('documents')
 export class DocumentsController {
@@ -30,8 +30,8 @@ export class DocumentsController {
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, cb) => {
-          const uniqueSuffix = `${Date.now()}-${randomUUID()}`;
-          cb(null, `${uniqueSuffix}-${file.originalname}`);
+          const uniqueName = `${randomUUID()}${extname(file.originalname)}`;
+          cb(null, uniqueName);
         },
       }),
     }),

@@ -16,8 +16,7 @@ export class DocumentsService {
   ) {}
 
   async createDocument(userId: string, file: Express.Multer.File) {
-    const filename = `${Date.now()}-${file.originalname}`;
-    const localPath = join('uploads', filename);
+    const localPath = file.path;
 
     try {
       const doc = await this.prisma.document.create({
