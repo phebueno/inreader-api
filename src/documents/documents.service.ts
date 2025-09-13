@@ -4,6 +4,8 @@ import { UpdateDocumentDto } from '@/documents/dto/update-document.dto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { TranscriptionsGateway } from '@/transcriptions/transcriptions.gateway';
 import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
+import { join } from 'path';
+import { createReadStream, existsSync } from 'fs';
 
 @Injectable()
 export class DocumentsService {
@@ -83,6 +85,23 @@ export class DocumentsService {
     }
 
     return doc;
+  }
+
+  async getDocumentStream(id: string, userId: string) {
+    const doc = await this.findOne(id, userId);
+
+    const filePath = join(process.cwd(), doc.key);
+
+    if (!existsSync(filePath)) {
+      throw new NotFoundException('File not found');
+    }
+    //TODO: add appending info
+
+    return {
+      stream: createReadStream(filePath),
+      mimeType: doc.mimeType,
+      filename: doc.key,
+    };
   }
 
   async update(id: string, dto: UpdateDocumentDto, userId: string) {

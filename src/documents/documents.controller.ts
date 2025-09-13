@@ -13,6 +13,7 @@ import {
   UseGuards,
   UseInterceptors,
   Req,
+  Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -21,6 +22,7 @@ import { DocumentsService } from '@/documents/documents.service';
 import { AuthGuard } from '@/auth/guards/auth.guard';
 import { UpdateDocumentDto } from '@/documents/dto/update-document.dto';
 import { AuthenticatedRequest } from '@/auth/types/auth.types';
+import { Response } from 'express';
 
 @Controller('documents')
 @UseGuards(AuthGuard)
@@ -54,6 +56,21 @@ export class DocumentsController {
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.documentsService.findOne(id, req.user.sub);
+  }
+
+  @Get(':id/download')
+  async download(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    const { stream, mimeType, filename } =
+      await this.documentsService.getDocumentStream(id, req.user.sub);
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    stream.pipe(res);
   }
 
   @Delete(':id')
