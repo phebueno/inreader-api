@@ -10,6 +10,8 @@ import { jwtConstants } from 'src/constants/constants';
 import { DocumentsModule } from './documents/documents.module';
 import { TranscriptionsModule } from './transcriptions/transcriptions.module';
 import { AiCompletionsModule } from './ai-completions/ai-completions.module';
+import { APP_FILTER } from '@nestjs/core';
+import { AllExceptionsFilter } from 'src/core/all-exceptions.filter';
 
 @Module({
   imports: [
@@ -21,9 +23,15 @@ import { AiCompletionsModule } from './ai-completions/ai-completions.module';
     }),
     DocumentsModule,
     TranscriptionsModule,
-    AiCompletionsModule,  
+    AiCompletionsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
+  ],
 })
 export class AppModule {}
