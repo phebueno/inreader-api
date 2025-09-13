@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
 
-import { AiCompletionsService } from './ai-completions.service';
-import { AiCompletionsController } from './ai-completions.controller';
-
-import { PrismaModule } from 'src/prisma/prisma.module';
-import { TranscriptionsModule } from 'src/transcriptions/transcriptions.module';
+import { AiCompletionsController } from '@/ai-completions/ai-completions.controller';
+import { AiCompletionsService } from '@/ai-completions/ai-completions.service';
+import { PrismaModule } from '@/prisma/prisma.module';
+import { TranscriptionsModule } from '@/transcriptions/transcriptions.module';
 
 @Module({
   controllers: [AiCompletionsController],

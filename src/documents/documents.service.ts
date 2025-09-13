@@ -1,14 +1,9 @@
-import { promises as fs } from 'fs';
-import { join } from 'path';
-
 import { Injectable } from '@nestjs/common';
 
-import { CreateDocumentDto } from './dto/create-document.dto';
-import { UpdateDocumentDto } from './dto/update-document.dto';
-
-import { PrismaService } from 'src/prisma/prisma.service';
-import { TranscriptionsService } from 'src/transcriptions/transcriptions.service';
-import { TranscriptionsGateway } from 'src/transcriptions/transcriptions.gateway';
+import { UpdateDocumentDto } from '@/documents/dto/update-document.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { TranscriptionsGateway } from '@/transcriptions/transcriptions.gateway';
+import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 
 @Injectable()
 export class DocumentsService {

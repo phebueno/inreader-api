@@ -1,3 +1,6 @@
+import * as path from 'path';
+import * as fs from 'fs';
+
 import {
   ConflictException,
   ForbiddenException,
@@ -6,16 +9,13 @@ import {
 } from '@nestjs/common';
 import { createWorker } from 'tesseract.js';
 
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 
 @Injectable()
 export class TranscriptionsService {
   constructor(private prisma: PrismaService) {}
 
   private async extractTextFromImage(filePath: string) {
-    const path = require('path');
-    const fs = require('fs');
-
     const fullPath = path.join(__dirname, '..', '..', filePath);
 
     if (!fs.existsSync(fullPath)) {

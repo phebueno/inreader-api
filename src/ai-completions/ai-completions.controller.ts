@@ -8,10 +8,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { AiCompletionsService } from './ai-completions.service';
-
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { AuthenticatedRequest } from 'src/auth/types/auth.types';
+import { AiCompletionsService } from '@/ai-completions/ai-completions.service';
+import { AuthGuard } from '@/auth/guards/auth.guard';
+import { AuthenticatedRequest } from '@/auth/types/auth.types';
 
 @Controller('ai-completions')
 @UseGuards(AuthGuard)

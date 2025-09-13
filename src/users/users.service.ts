@@ -1,10 +1,9 @@
 import * as bcrypt from 'bcrypt';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { CreateUserDto } from '@/users/dto/create-user.dto';
+import { UpdateUserDto } from '@/users/dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -49,7 +48,7 @@ export class UsersService {
 
   async findOne(id: string) {
     const user = await this.getUserOrFail(id);
-    const { password, ...result } = user;
+    const { password: _, ...result } = user;
     return result;
   }
 

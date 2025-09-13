@@ -1,8 +1,7 @@
 import { Controller, Post, Param, Get, UseGuards, Req } from '@nestjs/common';
 
-import { TranscriptionsService } from './transcriptions.service';
-
-import { AuthGuard } from 'src/auth/guards/auth.guard';
+import { AuthGuard } from '@/auth/guards/auth.guard';
+import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 
 @Controller('transcriptions')
 export class TranscriptionsController {

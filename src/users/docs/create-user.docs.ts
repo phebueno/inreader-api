@@ -1,7 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiCreatedResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 
-import { UserEntity } from '../entities/user.entity';
+import { UserEntity } from '@/users/entities/user.entity';
 
 export function CreateUserDoc() {
   return applyDecorators(

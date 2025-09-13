@@ -7,7 +7,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 
-import { UserEntity } from '../entities/user.entity';
+import { UserEntity } from '@/users/entities/user.entity';
 
 export function GetUserDoc() {
   return applyDecorators(

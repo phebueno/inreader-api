@@ -1,13 +1,9 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-import { PrismaService } from 'src/prisma/prisma.service';
-import { API_GEMINI_KEY } from 'src/constants/constants';
-import { TranscriptionsService } from 'src/transcriptions/transcriptions.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
+import { API_GEMINI_KEY } from '@/constants/constants';
 
 @Injectable()
 export class AiCompletionsService {

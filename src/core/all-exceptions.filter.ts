@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 
-import { AuthenticatedRequest } from 'src/auth/types/auth.types';
+import { AuthenticatedRequest } from '@/auth/types/auth.types';
 
 interface CustomHttpExceptionResponse {
   statusCode: number;

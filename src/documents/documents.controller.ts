@@ -17,10 +17,9 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 
-import { DocumentsService } from './documents.service';
-import { UpdateDocumentDto } from './dto/update-document.dto';
-
-import { AuthGuard } from 'src/auth/guards/auth.guard';
+import { DocumentsService } from '@/documents/documents.service';
+import { AuthGuard } from '@/auth/guards/auth.guard';
+import { UpdateDocumentDto } from '@/documents/dto/update-document.dto';
 
 @Controller('documents')
 export class DocumentsController {

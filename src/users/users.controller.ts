@@ -10,25 +10,16 @@ import {
   ForbiddenException,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiCreatedResponse,
-  ApiOkResponse,
-  ApiForbiddenResponse,
-  ApiNotFoundResponse,
-  ApiBadRequestResponse,
-} from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 
-import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { AuthenticatedRequest } from 'src/auth/types/auth.types';
-import { CreateUserDoc } from 'src/users/docs/create-user.docs';
-import { GetUserDoc } from 'src/users/docs/get-user.doc';
-import { UpdateUserDoc } from 'src/users/docs/update-user.doc';
+import { AuthGuard } from '@/auth/guards/auth.guard';
+import { AuthenticatedRequest } from '@/auth/types/auth.types';
+import { CreateUserDoc } from '@/users/docs/create-user.docs';
+import { GetUserDoc } from '@/users/docs/get-user.doc';
+import { UpdateUserDoc } from '@/users/docs/update-user.doc';
+import { CreateUserDto } from '@/users/dto/create-user.dto';
+import { UpdateUserDto } from '@/users/dto/update-user.dto';
+import { UsersService } from '@/users/users.service';
 
 @ApiTags('users')
 @Controller('users')
@@ -42,7 +33,6 @@ export class UsersController {
   }
 
   @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @Get(':id')
   @GetUserDoc()
   findOne(
@@ -56,7 +46,6 @@ export class UsersController {
   }
 
   @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @Patch(':id')
   @UpdateUserDoc()
   update(
