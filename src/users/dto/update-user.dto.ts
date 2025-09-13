@@ -1,4 +1,3 @@
-// update-user.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
