@@ -1,10 +1,11 @@
+import { TranscriptionDto } from '@/transcriptions/dto/transcription.dto';
 import { applyDecorators } from '@nestjs/common';
-import { 
-  ApiTags, 
-  ApiBearerAuth, 
-  ApiOkResponse, 
-  ApiNotFoundResponse, 
-  ApiBadRequestResponse 
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
 
 export function TranscribeDocumentDoc() {
@@ -13,7 +14,7 @@ export function TranscribeDocumentDoc() {
     ApiBearerAuth(),
     ApiOkResponse({
       description: 'Transcrição do documento iniciada ou retornada com sucesso',
-      type: 'string', // add DTO later
+      type: TranscriptionDto,
     }),
     ApiNotFoundResponse({ description: 'Documento não encontrado' }),
     ApiBadRequestResponse({ description: 'ID de documento inválido' }),
@@ -26,9 +27,11 @@ export function GetTranscriptionDoc() {
     ApiBearerAuth(),
     ApiOkResponse({
       description: 'Transcrição retornada com sucesso',
-      type: 'string', // add DTO later
+      type: TranscriptionDto,
     }),
-    ApiNotFoundResponse({ description: 'Documento ou transcrição não encontrados' }),
+    ApiNotFoundResponse({
+      description: 'Documento ou transcrição não encontrados',
+    }),
     ApiBadRequestResponse({ description: 'ID de documento inválido' }),
   );
 }
