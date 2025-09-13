@@ -12,8 +12,8 @@ import { AiCompletionsService } from '@/ai-completions/ai-completions.service';
 import { AuthGuard } from '@/auth/guards/auth.guard';
 import { AuthenticatedRequest } from '@/auth/types/auth.types';
 
-@Controller('ai-completions')
 @UseGuards(AuthGuard)
+@Controller('ai-completions')
 export class AiCompletionsController {
   constructor(private readonly aiCompletionsService: AiCompletionsService) {}
 
