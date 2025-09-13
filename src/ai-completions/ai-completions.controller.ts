@@ -16,9 +16,9 @@ import { AuthGuard } from 'src/auth/guards/auth.guard';
 export class AiCompletionsController {
   constructor(private readonly aiCompletionsService: AiCompletionsService) {}
 
-  @Post()
+  @Post('transcription/:transcriptionId')
   async create(
-    @Body('transcriptionId') transcriptionId: string,
+    @Param('transcriptionId') transcriptionId: string,
     @Body('prompt') prompt: string,
     @Req() req: any,
   ) {
