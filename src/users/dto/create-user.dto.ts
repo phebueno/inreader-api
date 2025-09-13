@@ -14,7 +14,7 @@ export class CreateUserDto {
 
   @ApiProperty()
   @IsNotEmpty()
-  @MinLength(3)
+  @MinLength(6)
   password: string;
 
   @ApiProperty()
