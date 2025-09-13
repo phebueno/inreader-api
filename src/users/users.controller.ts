@@ -14,12 +14,14 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { AuthGuard } from '@/auth/guards/auth.guard';
 import { AuthenticatedRequest } from '@/auth/types/auth.types';
-import { CreateUserDoc } from '@/users/docs/create-user.docs';
-import { GetUserDoc } from '@/users/docs/get-user.doc';
-import { UpdateUserDoc } from '@/users/docs/update-user.doc';
 import { CreateUserDto } from '@/users/dto/create-user.dto';
 import { UpdateUserDto } from '@/users/dto/update-user.dto';
 import { UsersService } from '@/users/users.service';
+import {
+  CreateUserDoc,
+  GetUserDoc,
+  UpdateUserDoc,
+} from '@/users/docs/user.docs';
 
 @ApiTags('users')
 @Controller('users')
