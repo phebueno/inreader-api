@@ -26,7 +26,16 @@ import { DocumentsService } from '@/documents/documents.service';
 import { AuthGuard } from '@/auth/guards/auth.guard';
 import { AuthenticatedRequest } from '@/auth/types/auth.types';
 import { Response } from 'express';
+import { ApiTags } from '@nestjs/swagger';
+import {
+  DownloadDocumentDoc,
+  GetAllDocumentsDoc,
+  GetDocumentDoc,
+  RemoveDocumentDoc,
+  UploadDocumentDoc,
+} from '@/documents/docs/documents.doc';
 
+@ApiTags('documents')
 @Controller('documents')
 @UseGuards(AuthGuard)
 export class DocumentsController {
@@ -44,6 +53,7 @@ export class DocumentsController {
       }),
     }),
   )
+  @UploadDocumentDoc()
   async uploadDocument(
     @UploadedFile(
       new ParseFilePipe({
@@ -63,11 +73,13 @@ export class DocumentsController {
   }
 
   @Get()
+  @GetAllDocumentsDoc()
   async findAll(@Req() req: AuthenticatedRequest) {
     return this.documentsService.findAll(req.user.sub);
   }
 
   @Get(':id')
+  @GetDocumentDoc()
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,
@@ -76,6 +88,7 @@ export class DocumentsController {
   }
 
   @Get(':id/download')
+  @DownloadDocumentDoc()
   async download(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,
@@ -91,6 +104,7 @@ export class DocumentsController {
   }
 
   @Delete(':id')
+  @RemoveDocumentDoc()
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,
