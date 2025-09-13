@@ -14,13 +14,16 @@ import {
   UseInterceptors,
   Req,
   Res,
+  ParseUUIDPipe,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 
 import { DocumentsService } from '@/documents/documents.service';
 import { AuthGuard } from '@/auth/guards/auth.guard';
-import { UpdateDocumentDto } from '@/documents/dto/update-document.dto';
 import { AuthenticatedRequest } from '@/auth/types/auth.types';
 import { Response } from 'express';
 
@@ -42,7 +45,18 @@ export class DocumentsController {
     }),
   )
   async uploadDocument(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({
+            fileType: /^image/,
+            skipMagicNumbersValidation: true,
+          }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
     @Req() req: AuthenticatedRequest,
   ) {
     return this.documentsService.createDocument(req.user.sub, file);
@@ -54,13 +68,16 @@ export class DocumentsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.documentsService.findOne(id, req.user.sub);
   }
 
   @Get(':id/download')
   async download(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,
     @Res() res: Response,
   ) {
@@ -74,7 +91,10 @@ export class DocumentsController {
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.documentsService.remove(id, req.user.sub);
   }
 }
