@@ -37,20 +37,20 @@ export class UsersController {
   @UseGuards(AuthGuard)
   @Get(':id')
   @GetUserDoc()
-  findOne(
+  async findOne(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     if (req.user.sub !== id) {
       throw new ForbiddenException('You can only update your own user data');
     }
-    return this.usersService.findOne(id);
+    return await this.usersService.findOne(id);
   }
 
   @UseGuards(AuthGuard)
   @Patch(':id')
   @UpdateUserDoc()
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
     @Req() req: AuthenticatedRequest,
@@ -58,6 +58,6 @@ export class UsersController {
     if (req.user.sub !== id) {
       throw new ForbiddenException('You can only update your own user data');
     }
-    return this.usersService.update(id, updateUserDto);
+    return await this.usersService.update(id, updateUserDto);
   }
 }
