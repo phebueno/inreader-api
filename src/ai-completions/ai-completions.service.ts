@@ -3,8 +3,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+import { PrismaService } from 'src/prisma/prisma.service';
 import { API_GEMINI_KEY } from 'src/constants/constants';
 import { TranscriptionsService } from 'src/transcriptions/transcriptions.service';
 

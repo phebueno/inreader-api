@@ -1,3 +1,6 @@
+import { randomUUID } from 'crypto';
+import { extname } from 'path';
+
 import {
   Controller,
   Get,
@@ -11,13 +14,13 @@ import {
   UseInterceptors,
   Req,
 } from '@nestjs/common';
-import { DocumentsService } from './documents.service';
-import { UpdateDocumentDto } from './dto/update-document.dto';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { randomUUID } from 'crypto';
-import { extname } from 'path';
+
+import { DocumentsService } from './documents.service';
+import { UpdateDocumentDto } from './dto/update-document.dto';
+
+import { AuthGuard } from 'src/auth/guards/auth.guard';
 
 @Controller('documents')
 export class DocumentsController {

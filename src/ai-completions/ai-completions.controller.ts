@@ -1,14 +1,15 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
+
 import { AiCompletionsService } from './ai-completions.service';
+
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { AuthenticatedRequest } from 'src/auth/types/auth.types';
 

@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
+
 import { AuthenticatedRequest } from 'src/auth/types/auth.types';
 
 interface CustomHttpExceptionResponse {

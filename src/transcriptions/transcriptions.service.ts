@@ -4,8 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { createWorker } from 'tesseract.js';
+
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class TranscriptionsService {
@@ -28,7 +29,7 @@ export class TranscriptionsService {
     return ret.data.text;
   }
 
-    async getVerifiedTranscription(userId: string, transcriptionId: string) {
+  async getVerifiedTranscription(userId: string, transcriptionId: string) {
     const transcription = await this.prisma.transcription.findUnique({
       where: { id: transcriptionId },
       include: { document: true },
