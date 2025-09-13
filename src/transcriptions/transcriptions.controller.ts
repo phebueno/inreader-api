@@ -11,6 +11,7 @@ import {
 import { AuthGuard } from '@/auth/guards/auth.guard';
 import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 import { AuthenticatedRequest } from '@/auth/types/auth.types';
+import { GetTranscriptionDoc, TranscribeDocumentDoc } from '@/transcriptions/docs/transcriptions.doc';
 
 @UseGuards(AuthGuard)
 @Controller('transcriptions')
@@ -18,6 +19,7 @@ export class TranscriptionsController {
   constructor(private readonly transcriptionsService: TranscriptionsService) {}
 
   @Post('document/:documentId')
+  @TranscribeDocumentDoc()
   async transcribe(
     @Param('documentId', ParseUUIDPipe) documentId: string,
     @Req() req: AuthenticatedRequest,
@@ -29,6 +31,7 @@ export class TranscriptionsController {
   }
 
   @Get('document/:documentId')
+  @GetTranscriptionDoc()
   async getTranscription(
     @Param('documentId', ParseUUIDPipe) documentId: string,
     @Req() req: AuthenticatedRequest,
