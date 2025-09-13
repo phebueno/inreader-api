@@ -20,12 +20,13 @@ import { diskStorage } from 'multer';
 import { DocumentsService } from '@/documents/documents.service';
 import { AuthGuard } from '@/auth/guards/auth.guard';
 import { UpdateDocumentDto } from '@/documents/dto/update-document.dto';
+import { AuthenticatedRequest } from '@/auth/types/auth.types';
 
 @Controller('documents')
+@UseGuards(AuthGuard)
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
-  @UseGuards(AuthGuard)
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -38,30 +39,25 @@ export class DocumentsController {
       }),
     }),
   )
-  async uploadDocument(@UploadedFile() file: Express.Multer.File, @Req() req) {
+  async uploadDocument(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.documentsService.createDocument(req.user.sub, file);
   }
 
   @Get()
-  findAll() {
-    return this.documentsService.findAll();
+  async findAll(@Req() req: AuthenticatedRequest) {
+    return this.documentsService.findAll(req.user.sub);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.documentsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateDocumentDto: UpdateDocumentDto,
-  ) {
-    return this.documentsService.update(+id, updateDocumentDto);
+  async findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.documentsService.findOne(id, req.user.sub);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.documentsService.remove(+id);
+  async remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.documentsService.remove(id, req.user.sub);
   }
 }
