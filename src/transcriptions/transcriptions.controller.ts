@@ -9,7 +9,10 @@ export class TranscriptionsController {
   @UseGuards(AuthGuard)
   @Post('document/:documentId')
   async transcribe(@Param('documentId') documentId: string, @Req() req) {
-    return this.transcriptionsService.transcribeDocument(req.user.sub, documentId);
+    return this.transcriptionsService.transcribeDocument(
+      req.user.sub,
+      documentId,
+    );
   }
 
   @UseGuards(AuthGuard)
