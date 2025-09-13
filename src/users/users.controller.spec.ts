@@ -39,7 +39,6 @@ describe('UsersController', () => {
       controllers: [UsersController],
       providers: [{ provide: UsersService, useValue: mockUsersService }],
     })
-      // Override guard e pipe que exigem serviços externos
       .overrideGuard(AuthGuard)
       .useClass(MockAuthGuard)
       .overridePipe(ParseUUIDPipe)

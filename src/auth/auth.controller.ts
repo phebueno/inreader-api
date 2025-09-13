@@ -7,12 +7,11 @@ import {
   Request,
 } from '@nestjs/common';
 
-import { AuthService } from './auth.service';
-
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { AuthenticatedRequest } from 'src/auth/types/auth.types';
 import { LoginDto } from '@/auth/dto/login.dto';
 import { LoginDoc, ProfileDoc } from '@/auth/docs/auth.doc';
+import { AuthService } from '@/auth/auth.service';
+import { AuthGuard } from '@/auth/guards/auth.guard';
+import { AuthenticatedRequest } from '@/auth/types/auth.types';
 
 @Controller('auth')
 export class AuthController {
