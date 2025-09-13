@@ -27,9 +27,9 @@ export class UsersService {
     });
   }
 
-  private async getUserOrFail(id: number) {
+  private async getUserOrFail(id: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id: id.toString() },
+      where: { id },
       select: {
         id: true,
         email: true,
@@ -46,13 +46,13 @@ export class UsersService {
     return user;
   }
 
-    async findOne(id: number) {
+  async findOne(id: string) {
     const user = await this.getUserOrFail(id);
     const { password, ...result } = user;
     return result;
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto) {
     await this.getUserOrFail(id);
 
     const data = { ...updateUserDto };
