@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { UpdateDocumentDto } from '@/documents/dto/update-document.dto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { TranscriptionsGateway } from '@/transcriptions/transcriptions.gateway';
 import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
@@ -102,15 +101,6 @@ export class DocumentsService {
       mimeType: doc.mimeType,
       filename: doc.key,
     };
-  }
-
-  async update(id: string, dto: UpdateDocumentDto, userId: string) {
-    const doc = await this.findOne(id, userId);
-
-    return this.prisma.document.update({
-      where: { id: doc.id },
-      data: { ...dto },
-    });
   }
 
   async remove(id: string, userId: string) {

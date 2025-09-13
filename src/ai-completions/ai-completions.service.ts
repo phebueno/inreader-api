@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { PrismaService } from '@/prisma/prisma.service';
 import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 import { API_GEMINI_KEY } from '@/constants/constants';
+import { CreateAiCompletionDto } from '@/ai-completions/dto/create-ai-completion.dto';
 
 @Injectable()
 export class AiCompletionsService {
@@ -19,7 +20,7 @@ export class AiCompletionsService {
   async createAiCompletion(
     userId: string,
     transcriptionId: string,
-    prompt: string,
+    { prompt }: CreateAiCompletionDto,
   ) {
     const transcription =
       await this.transcriptionService.getVerifiedTranscription(
