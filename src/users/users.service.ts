@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -27,15 +27,49 @@ export class UsersService {
     });
   }
 
-  findAll() {
-    return `This action returns all users`;
+  private async getUserOrFail(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: id.toString() },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true,
+        password: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    return user;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+    async findOne(id: number) {
+    const user = await this.getUserOrFail(id);
+    const { password, ...result } = user;
+    return result;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    await this.getUserOrFail(id);
+
+    const data = { ...updateUserDto };
+
+    if (updateUserDto.password) {
+      data.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    return this.prisma.user.update({
+      where: { id: id.toString() },
+      data,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true,
+      },
+    });
   }
 }
