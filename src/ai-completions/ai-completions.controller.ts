@@ -13,6 +13,11 @@ import { AiCompletionsService } from '@/ai-completions/ai-completions.service';
 import { AuthGuard } from '@/auth/guards/auth.guard';
 import { AuthenticatedRequest } from '@/auth/types/auth.types';
 import { CreateAiCompletionDto } from '@/ai-completions/dto/create-ai-completion.dto';
+import {
+  CreateAiCompletionDoc,
+  GetAiCompletionDoc,
+  GetAiCompletionsByTranscriptionDoc,
+} from '@/ai-completions/docs/ai-completions.doc';
 
 @UseGuards(AuthGuard)
 @Controller('ai-completions')
@@ -20,6 +25,7 @@ export class AiCompletionsController {
   constructor(private readonly aiCompletionsService: AiCompletionsService) {}
 
   @Post('transcription/:transcriptionId')
+  @CreateAiCompletionDoc()
   async create(
     @Param('transcriptionId', ParseUUIDPipe) transcriptionId: string,
     @Body() createAiCompletionDto: CreateAiCompletionDto,
@@ -33,6 +39,7 @@ export class AiCompletionsController {
   }
 
   @Get('transcription/:transcriptionId')
+  @GetAiCompletionsByTranscriptionDoc()
   async findAllByTranscription(
     @Param('transcriptionId', ParseUUIDPipe) transcriptionId: string,
     @Req() req: AuthenticatedRequest,
@@ -44,6 +51,7 @@ export class AiCompletionsController {
   }
 
   @Get(':id')
+  @GetAiCompletionDoc()
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,
