@@ -8,20 +8,24 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { Logger } from '@nestjs/common';
+import { TranscriptionUpdatePayload } from '@/transcriptions/types/transcriptions.types';
 
 @WebSocketGateway({ cors: true })
 export class TranscriptionsGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
+  private readonly logger = new Logger(TranscriptionsGateway.name);
+
   @WebSocketServer()
   server: Server;
 
   handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+    this.logger.log(`Client connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    this.logger.log(`Client disconnected: ${client.id}`);
   }
 
   @SubscribeMessage('join')
@@ -30,11 +34,11 @@ export class TranscriptionsGateway
     @ConnectedSocket() client: Socket,
   ) {
     client.join(data.userId);
-    console.log(`Client ${client.id} joined room ${data.userId}`);
+    this.logger.log(`Client ${client.id} joined room ${data.userId}`);
   }
 
-  sendTranscriptionUpdate(userId: string, payload: any) {
-    console.log('EMITING')
+  sendTranscriptionUpdate(userId: string, payload: TranscriptionUpdatePayload) {
+    this.logger.log(`Emitting transcriptionUpdate to user ${userId}`);
     this.server.to(userId).emit('transcriptionUpdate', payload);
   }
 }
