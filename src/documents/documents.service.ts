@@ -5,6 +5,7 @@ import { TranscriptionsGateway } from '@/transcriptions/transcriptions.gateway';
 import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 import { join } from 'path';
 import { createReadStream, existsSync } from 'fs';
+import { unlink } from 'fs/promises';
 
 @Injectable()
 export class DocumentsService {
@@ -105,6 +106,15 @@ export class DocumentsService {
 
   async remove(id: string, userId: string) {
     const doc = await this.findOne(id, userId);
+    const filePath = join(process.cwd(), doc.key);
+
+    if (existsSync(filePath)) {
+      try {
+        await unlink(filePath);
+      } catch (err) {
+        console.error(`Erro ao deletar o arquivo ${filePath}:`, err);
+      }
+    }
 
     return this.prisma.document.delete({
       where: { id: doc.id },
