@@ -49,25 +49,30 @@ describe('AuthService', () => {
       const hashedPassword = await bcrypt.hash(password, 10);
       const loginDto = { email: 'test@test.com', password };
 
-      mockPrismaService.user.findUnique.mockResolvedValue({
+      const userMock = {
         id: '1',
         email: 'test@test.com',
-        password: hashedPassword,
         name: 'Fernando',
+      };
+
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        ...userMock,
+        password: hashedPassword,
       });
 
       const result = await service.login(loginDto);
 
       expect(result).toEqual({
         accessToken: 'mocked-jwt-token',
-        username: 'Fernando',
+        user: userMock,
       });
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
-        where: { email: loginDto.email },
+        where: { email: userMock.email },
       });
       expect(mockJwtService.signAsync).toHaveBeenCalledWith({
-        sub: '1',
-        email: 'test@test.com',
+        sub: userMock.id,
+        email: userMock.email,
+        name: userMock.name,
       });
     });
 
