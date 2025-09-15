@@ -1,7 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { AuthGuard } from '@/auth/guards/auth.guard';
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ConflictException,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthController } from '@/auth/auth.controller';
 import { AuthService } from '@/auth/auth.service';
 
@@ -18,6 +24,7 @@ describe('AuthController', () => {
 
   const mockAuthService = {
     login: jest.fn(),
+    register: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -44,7 +51,10 @@ describe('AuthController', () => {
   describe('login', () => {
     it('should call authService.login and return the result', async () => {
       const loginDto = { email: 'test@test.com', password: '123456' };
-      const mockResult = { accessToken: 'mocked-jwt-token', username: 'Fernando' };
+      const mockResult = {
+        accessToken: 'mocked-jwt-token',
+        username: 'Fernando',
+      };
       mockAuthService.login.mockResolvedValue(mockResult);
 
       const result = await controller.login(loginDto);
@@ -57,7 +67,46 @@ describe('AuthController', () => {
       const loginDto = { email: 'wrong@test.com', password: '123456' };
       mockAuthService.login.mockRejectedValue(new UnauthorizedException());
 
-      await expect(controller.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      await expect(controller.login(loginDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+  });
+
+  describe('register', () => {
+    it('should call authService.register and return the result', async () => {
+      const registerDto = {
+        email: 'new@test.com',
+        password: '123456',
+        name: 'Novo Usuário',
+      };
+      const mockResult = {
+        id: '1',
+        email: 'new@test.com',
+        name: 'Novo Usuário',
+        createdAt: new Date(),
+      };
+
+      mockAuthService.register.mockResolvedValue(mockResult);
+
+      const result = await controller.register(registerDto);
+
+      expect(result).toEqual(mockResult);
+      expect(mockAuthService.register).toHaveBeenCalledWith(registerDto);
+    });
+
+    it('should throw ConflictException if email already exists', async () => {
+      const registerDto = {
+        email: 'existing@test.com',
+        password: '123456',
+        name: 'Usuário Existente',
+      };
+
+      mockAuthService.register.mockRejectedValue(new ConflictException());
+
+      await expect(controller.register(registerDto)).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 

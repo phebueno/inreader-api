@@ -29,7 +29,6 @@ describe('UsersController', () => {
   let service: UsersService;
 
   const mockUsersService = {
-    create: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
   };
@@ -51,19 +50,6 @@ describe('UsersController', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-  });
-
-  describe('create', () => {
-    it('should call usersService.create and return the result', async () => {
-      const dto = { email: 'test@test.com', password: '123456', name: 'Fernando' };
-      const mockResult = { id: '1', ...dto, createdAt: new Date() };
-      mockUsersService.create.mockResolvedValue(mockResult);
-
-      const result = await controller.create(dto);
-
-      expect(result).toEqual(mockResult);
-      expect(mockUsersService.create).toHaveBeenCalledWith(dto);
-    });
   });
 
   describe('findOne', () => {

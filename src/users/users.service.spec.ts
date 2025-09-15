@@ -10,7 +10,6 @@ describe('UsersService', () => {
 
   const mockPrisma = {
     user: {
-      create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
     },
@@ -30,39 +29,6 @@ describe('UsersService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-  });
-
-  describe('create', () => {
-    it('should create a new user', async () => {
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
-      mockPrisma.user.create.mockResolvedValue({
-        id: '1',
-        email: 'test@test.com',
-        name: 'Fernando',
-        createdAt: new Date(),
-      });
-
-      const result = await service.create({
-        email: 'test@test.com',
-        password: '123456',
-        name: 'Fernando',
-      });
-
-      expect(result).toHaveProperty('id');
-      expect(mockPrisma.user.create).toHaveBeenCalledWith({
-        data: {
-          email: 'test@test.com',
-          password: 'hashedPassword',
-          name: 'Fernando',
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          createdAt: true,
-        },
-      });
-    });
   });
 
   describe('findOne', () => {

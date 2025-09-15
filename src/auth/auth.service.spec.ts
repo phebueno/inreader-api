@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { UnauthorizedException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from '@/auth/auth.service';
 
 describe('AuthService', () => {
@@ -17,6 +17,7 @@ describe('AuthService', () => {
   const mockPrismaService = {
     user: {
       findUnique: jest.fn(),
+      create: jest.fn(),
     },
   };
 
@@ -93,6 +94,64 @@ describe('AuthService', () => {
 
       await expect(service.login(loginDto)).rejects.toThrow(
         UnauthorizedException,
+      );
+    });
+  });
+
+  describe('register', () => {
+    it('should create a new user if email is not taken', async () => {
+      const registerDto = {
+        email: 'new@test.com',
+        password: '123456',
+        name: 'Novo Usuário',
+      };
+
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      mockPrismaService.user.create.mockResolvedValue({
+        id: '2',
+        email: 'new@test.com',
+        name: 'Novo Usuário',
+        createdAt: new Date(),
+      });
+
+      const result = await service.register(registerDto);
+
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { email: registerDto.email },
+      });
+
+      expect(mockPrismaService.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            email: registerDto.email,
+            name: registerDto.name,
+            // senha deve estar hasheada (não igual à original)
+            password: expect.any(String),
+          }),
+        }),
+      );
+
+      expect(result).toHaveProperty('id');
+      expect(result.email).toBe(registerDto.email);
+    });
+
+    it('should throw ConflictException if email already exists', async () => {
+      const registerDto = {
+        email: 'existing@test.com',
+        password: '123456',
+        name: 'Usuário Existente',
+      };
+
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: '3',
+        email: 'existing@test.com',
+        password: 'hashedPass',
+        name: 'Usuário Existente',
+      });
+
+      await expect(service.register(registerDto)).rejects.toThrow(
+        ConflictException,
       );
     });
   });

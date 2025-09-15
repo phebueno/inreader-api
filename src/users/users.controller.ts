@@ -14,11 +14,9 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { AuthGuard } from '@/auth/guards/auth.guard';
 import { AuthenticatedRequest } from '@/auth/types/auth.types';
-import { CreateUserDto } from '@/users/dto/create-user.dto';
 import { UpdateUserDto } from '@/users/dto/update-user.dto';
 import { UsersService } from '@/users/users.service';
 import {
-  CreateUserDoc,
   GetUserDoc,
   UpdateUserDoc,
 } from '@/users/docs/user.docs';
@@ -27,12 +25,6 @@ import {
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-
-  @Post()
-  @CreateUserDoc()
-  async create(@Body() createUserDto: CreateUserDto) {
-    return await this.usersService.create(createUserDto);
-  }
 
   @UseGuards(AuthGuard)
   @Get(':id')
