@@ -4,9 +4,25 @@ import { DocumentsService } from './documents.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 import { TranscriptionsGateway } from '@/transcriptions/transcriptions.gateway';
-import * as fs from 'fs';
+import { existsSync, createReadStream } from 'fs';
+import { unlink } from 'fs/promises';
 
-jest.mock('fs');
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  createReadStream: jest.fn(),
+}));
+jest.mock('fs/promises', () => ({
+  unlink: jest.fn(),
+}));
+jest.mock('tesseract.js', () => ({
+  createWorker: jest.fn().mockImplementation(() => ({
+    load: jest.fn(),
+    loadLanguage: jest.fn(),
+    initialize: jest.fn(),
+    recognize: jest.fn().mockResolvedValue({ data: { text: 'mocked transcription' } }),
+    terminate: jest.fn(),
+  })),
+}));
 
 describe('DocumentsService', () => {
   let service: DocumentsService;
@@ -61,10 +77,6 @@ describe('DocumentsService', () => {
         userId: 'user',
         mimeType: 'text/plain',
       };
-      const mockFile = {
-        path: 'file.txt',
-        mimetype: 'text/plain',
-      } as Express.Multer.File;
 
       prisma.document.create.mockResolvedValue(mockDoc);
       transcriptionsService.transcribeDocument.mockResolvedValue(
@@ -80,6 +92,7 @@ describe('DocumentsService', () => {
       expect(result).toEqual(mockDoc);
 
       await new Promise(setImmediate);
+
       expect(transcriptionsService.transcribeDocument).toHaveBeenCalledWith(
         'user',
         '1',
@@ -179,8 +192,8 @@ describe('DocumentsService', () => {
         mimeType: 'text/plain',
       };
       prisma.document.findUnique.mockResolvedValue(mockDoc as any);
-      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-      jest.spyOn(fs, 'createReadStream').mockReturnValue('stream' as any);
+      (existsSync as jest.Mock).mockReturnValue(true);
+      (createReadStream as jest.Mock).mockReturnValue('stream' as any);
 
       const result = await service.getDocumentStream('1', 'user');
       expect(result).toEqual({
@@ -198,7 +211,7 @@ describe('DocumentsService', () => {
         mimeType: 'text/plain',
       };
       prisma.document.findUnique.mockResolvedValue(mockDoc as any);
-      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+      (existsSync as jest.Mock).mockReturnValue(false);
 
       await expect(service.getDocumentStream('1', 'user')).rejects.toThrow(
         NotFoundException,
@@ -211,8 +224,12 @@ describe('DocumentsService', () => {
       prisma.document.findUnique.mockResolvedValue({
         id: '1',
         userId: 'user',
+        key: 'file.txt',
       } as any);
       prisma.document.delete.mockResolvedValue({ id: '1' } as any);
+
+      (existsSync as jest.Mock).mockReturnValue(true);
+      (unlink as jest.Mock).mockResolvedValue(undefined);
 
       const result = await service.remove('1', 'user');
       expect(result).toEqual({ id: '1' });
