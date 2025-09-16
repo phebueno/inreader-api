@@ -6,6 +6,7 @@ import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 import { join } from 'path';
 import { createReadStream, existsSync } from 'fs';
 import { unlink } from 'fs/promises';
+import { DocumentDto } from '@/documents/dto/document.dto';
 
 @Injectable()
 export class DocumentsService {
@@ -37,7 +38,7 @@ export class DocumentsService {
     }
   }
 
-  private async processTranscription(doc: any, userId: string) {
+  private async processTranscription(doc: DocumentDto, userId: string) {
     try {
       const transcription = await this.transcriptionsService.transcribeDocument(
         userId,
