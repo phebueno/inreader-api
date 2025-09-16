@@ -17,6 +17,31 @@ export class AiCompletionsService {
     this.genAI = new GoogleGenerativeAI(API_GEMINI_KEY);
   }
 
+  private buildMessages(prompt: string, transcriptionText: string) {
+    const systemMessage = {
+      role: 'system',
+      parts: [
+        {
+          text: `Você é uma IA que analisa textos já extraídos de documentos de imagens. 
+          Você receberá perguntas sempre seguidas do texto extraído. Responda essas perguntas 
+          de acordo.`,
+        },
+      ],
+    };
+
+    const userMessage = {
+      role: 'user',
+      parts: [
+        {
+          text: `- Pergunta do Usuário: ${prompt}\n\n
+          - Texto Extraído para Análise: ${transcriptionText}`,
+        },
+      ],
+    };
+
+    return [systemMessage, userMessage];
+  }
+
   async createAiCompletion(
     userId: string,
     transcriptionId: string,
@@ -30,9 +55,11 @@ export class AiCompletionsService {
 
     const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    const result = await model.generateContent(
-      `${prompt}\n\n${transcription.text}`,
-    );
+    const messages = this.buildMessages(prompt, transcription.text);
+
+    const result = await model.generateContent({
+      contents: messages,
+    });
     const response = result.response;
     const completionText = response.text();
 
@@ -41,6 +68,7 @@ export class AiCompletionsService {
         transcriptionId,
         prompt,
         response: completionText,
+        tokensUsed: response.usageMetadata.totalTokenCount,
       },
     });
 
