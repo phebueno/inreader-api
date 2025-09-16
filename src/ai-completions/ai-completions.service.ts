@@ -19,12 +19,16 @@ export class AiCompletionsService {
 
   private buildMessages(prompt: string, transcriptionText: string) {
     const systemMessage = {
-      role: 'system',
+      role: 'user',
       parts: [
         {
-          text: `Você é uma IA que analisa textos já extraídos de documentos de imagens. 
+          text: `Você é uma IA que analisa textos já extraídos de documentos ou imagens. 
           Você receberá perguntas sempre seguidas do texto extraído. Responda essas perguntas 
-          de acordo.`,
+          de acordo ou obedeças as ordens do usuário de acordo. As requisições sempre virão no seguinte modelo:
+          
+          - Pergunta ou ordem do Usuário: [pergunta ou ordem]\n\n
+          - Texto Extraído para Análise: [texto referência para suas análises]
+          `,
         },
       ],
     };
@@ -33,7 +37,7 @@ export class AiCompletionsService {
       role: 'user',
       parts: [
         {
-          text: `- Pergunta do Usuário: ${prompt}\n\n
+          text: `- Pergunta ou ordem do Usuário: ${prompt}\n\n
           - Texto Extraído para Análise: ${transcriptionText}`,
         },
       ],
