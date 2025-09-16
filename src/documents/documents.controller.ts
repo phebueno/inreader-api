@@ -118,6 +118,7 @@ export class DocumentsController {
     @Req() req: AuthenticatedRequest,
     @Res() res: Response,
   ) {
+    console.log('here!!')
     const { buffer, mimeType, filename } =
       await this.documentsService.getDocumentStream(id, req.user.sub, {
         original: false,
