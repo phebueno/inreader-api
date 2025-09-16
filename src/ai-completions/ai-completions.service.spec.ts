@@ -18,8 +18,8 @@ jest.mock('@google/generative-ai', () => ({
 
 describe('AiCompletionsService', () => {
   let service: AiCompletionsService;
-  let prisma: { aiCompletion: any };
-  let transcriptionService: { getVerifiedTranscription: jest.Mock };
+  let prisma: any;
+  let transcriptionService: any;
 
   const mockUser = 'user-id';
   const mockTranscription = {
@@ -27,18 +27,26 @@ describe('AiCompletionsService', () => {
     text: 'transcription text',
     document: { userId: mockUser },
   };
+  const aiResponseText = 'AI generated summary';
+  const totalTokens = 42;
 
   beforeEach(async () => {
     prisma = {
       aiCompletion: {
-        create: jest.fn(),
+        create: jest.fn().mockResolvedValue({
+          id: 'ai1',
+          transcriptionId: 't1',
+          prompt: 'Summarize this',
+          response: aiResponseText,
+          tokensUsed: totalTokens,
+        }),
         findMany: jest.fn(),
         findUnique: jest.fn(),
       },
     };
 
     transcriptionService = {
-      getVerifiedTranscription: jest.fn(),
+      getVerifiedTranscription: jest.fn().mockResolvedValue(mockTranscription),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -51,27 +59,19 @@ describe('AiCompletionsService', () => {
 
     service = module.get<AiCompletionsService>(AiCompletionsService);
 
-    mockGenerateContent.mockReset();
-    mockText.mockReset();
+    // 🔹 Configura os mocks do Gemini
+    mockText.mockReturnValue(aiResponseText);
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: mockText,
+        usageMetadata: { totalTokenCount: totalTokens },
+      },
+    });
   });
 
   describe('createAiCompletion', () => {
     it('should create AI completion successfully', async () => {
-      transcriptionService.getVerifiedTranscription.mockResolvedValue(
-        mockTranscription,
-      );
-
       const promptDto: CreateAiCompletionDto = { prompt: 'Summarize this' };
-      const aiResponseText = 'AI generated summary';
-      mockText.mockReturnValue(aiResponseText);
-      mockGenerateContent.mockResolvedValue({ response: { text: mockText } });
-
-      prisma.aiCompletion.create.mockResolvedValue({
-        id: 'ai1',
-        transcriptionId: 't1',
-        prompt: promptDto.prompt,
-        response: aiResponseText,
-      });
 
       const result = await service.createAiCompletion(
         mockUser,
@@ -82,14 +82,15 @@ describe('AiCompletionsService', () => {
       expect(
         transcriptionService.getVerifiedTranscription,
       ).toHaveBeenCalledWith(mockUser, 't1');
-      expect(mockGenerateContent).toHaveBeenCalledWith(
-        `${promptDto.prompt}\n\n${mockTranscription.text}`,
-      );
+      expect(mockGenerateContent).toHaveBeenCalledWith({
+        contents: expect.any(Array),
+      });
       expect(prisma.aiCompletion.create).toHaveBeenCalledWith({
         data: {
           transcriptionId: 't1',
           prompt: promptDto.prompt,
           response: aiResponseText,
+          tokensUsed: totalTokens,
         },
       });
       expect(result).toEqual({
@@ -97,15 +98,13 @@ describe('AiCompletionsService', () => {
         transcriptionId: 't1',
         prompt: promptDto.prompt,
         response: aiResponseText,
+        tokensUsed: totalTokens,
       });
     });
   });
 
   describe('findAllByTranscription', () => {
     it('should return all AI completions for a transcription', async () => {
-      transcriptionService.getVerifiedTranscription.mockResolvedValue(
-        mockTranscription,
-      );
       const mockCompletions = [{ id: 'ai1' }, { id: 'ai2' }];
       prisma.aiCompletion.findMany.mockResolvedValue(mockCompletions);
 
@@ -131,10 +130,6 @@ describe('AiCompletionsService', () => {
         response: 'Result',
       });
 
-      transcriptionService.getVerifiedTranscription.mockResolvedValue(
-        mockTranscription,
-      );
-
       const result = await service.findOne(mockUser, 'ai1');
 
       expect(prisma.aiCompletion.findUnique).toHaveBeenCalledWith({
@@ -153,9 +148,45 @@ describe('AiCompletionsService', () => {
 
     it('should throw NotFoundException if AI completion not found', async () => {
       prisma.aiCompletion.findUnique.mockResolvedValue(null);
-
       await expect(service.findOne(mockUser, 'ai1')).rejects.toThrow(
         NotFoundException,
+      );
+    });
+  });
+
+  describe('buildMessages', () => {
+    it('should build the correct messages array', () => {
+      const prompt = 'Summarize this';
+      const transcriptionText = 'transcription text';
+
+      const messages = service['buildMessages'](prompt, transcriptionText);
+
+      expect(messages).toHaveLength(2);
+
+      expect(messages[0]).toEqual({
+        role: 'system',
+        parts: [
+          {
+            text: expect.stringContaining(
+              'Você é uma IA que analisa textos já extraídos de documentos de imagens',
+            ),
+          },
+        ],
+      });
+
+      expect(messages[1]).toEqual({
+        role: 'user',
+        parts: [
+          {
+            text: expect.stringContaining(
+              '- Pergunta do Usuário: Summarize this',
+            ),
+          },
+        ],
+      });
+
+      expect(messages[1].parts[0].text).toContain(
+        '- Texto Extraído para Análise: transcription text',
       );
     });
   });
