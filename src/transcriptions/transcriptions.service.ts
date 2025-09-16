@@ -16,17 +16,21 @@ export class TranscriptionsService {
   constructor(private prisma: PrismaService) {}
 
   private async extractTextFromImage(filePath: string) {
-    const fullPath = path.join(__dirname, '..', '..', filePath);
+    try {
+      const fullPath = path.join(__dirname, '..', '..', filePath);
 
-    if (!fs.existsSync(fullPath)) {
-      throw new NotFoundException(`File not found at path: ${fullPath}`);
+      if (!fs.existsSync(fullPath)) {
+        throw new NotFoundException(`File not found at path: ${fullPath}`);
+      }
+
+      const worker = await createWorker('por');
+      const ret = await worker.recognize(fullPath);
+      await worker.terminate();
+
+      return ret.data.text;
+    } catch (error) {
+      throw new Error('Transcription failed!');
     }
-
-    const worker = await createWorker('por');
-    const ret = await worker.recognize(fullPath);
-    await worker.terminate();
-
-    return ret.data.text;
   }
 
   async getVerifiedTranscription(userId: string, transcriptionId: string) {
