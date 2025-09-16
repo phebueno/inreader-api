@@ -92,13 +92,40 @@ export class DocumentsController {
     @Req() req: AuthenticatedRequest,
     @Res() res: Response,
   ) {
-    const { stream, mimeType, filename } =
-      await this.documentsService.getDocumentStream(id, req.user.sub);
+    const result = await this.documentsService.getDocumentStream(
+      id,
+      req.user.sub,
+      { original: true },
+    );
+
+    res.setHeader('Content-Type', result.mimeType);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${result.filename}"`,
+    );
+
+    if (result.stream) {
+      result.stream.pipe(res);
+    } else if (result.buffer) {
+      res.end(result.buffer);
+    }
+  }
+
+  @Get(':id/download/full')
+  @DownloadDocumentDoc()
+  async downloadFull(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    const { buffer, mimeType, filename } =
+      await this.documentsService.getDocumentStream(id, req.user.sub, {
+        original: false,
+      });
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-    stream.pipe(res);
+    res.send(buffer);
   }
 
   @Delete(':id')

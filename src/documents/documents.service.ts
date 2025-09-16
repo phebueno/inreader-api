@@ -4,9 +4,10 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { TranscriptionsGateway } from '@/transcriptions/transcriptions.gateway';
 import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 import { join } from 'path';
-import { createReadStream, existsSync } from 'fs';
+import { createReadStream, existsSync, promises as fs } from 'fs';
 import { unlink } from 'fs/promises';
 import { DocumentDto } from '@/documents/dto/document.dto';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 @Injectable()
 export class DocumentsService {
@@ -88,20 +89,156 @@ export class DocumentsService {
     return doc;
   }
 
-  async getDocumentStream(id: string, userId: string) {
-    const doc = await this.findOne(id, userId);
+  async findOneDeep(id: string, userId: string) {
+    const doc = await this.prisma.document.findUnique({
+      where: { id },
+      include: {
+        transcription: {
+          include: {
+            aiCompletions: true,
+          },
+        },
+      },
+    });
 
+    if (!doc || doc.userId !== userId) {
+      throw new NotFoundException(`Document #${id} not found`);
+    }
+
+    return doc;
+  }
+
+  async getDocumentStream(
+    id: string,
+    userId: string,
+    options?: { original?: boolean },
+  ) {
+    const doc = await this.findOneDeep(id, userId)
     const filePath = join(process.cwd(), doc.key);
 
     if (!existsSync(filePath)) {
       throw new NotFoundException('File not found');
     }
-    //TODO: add appending info
+
+    if (options?.original) {
+      return {
+        stream: createReadStream(filePath),
+        mimeType: doc.mimeType,
+        filename: doc.key,
+      };
+    }
+
+    const imageBytes = await fs.readFile(filePath);
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    const page1 = pdfDoc.addPage();
+    const pageWidth = page1.getWidth();
+    const pageHeight = page1.getHeight();
+    const margin = 50;
+
+    let imageEmbed;
+    if (doc.mimeType === 'image/png')
+      imageEmbed = await pdfDoc.embedPng(imageBytes);
+    else imageEmbed = await pdfDoc.embedJpg(imageBytes);
+
+    const { width: imgWidth, height: imgHeight } = imageEmbed.scaleToFit(
+      pageWidth - 2 * margin,
+      pageHeight - 2 * margin,
+    );
+    const imgX = pageWidth / 2 - imgWidth / 2;
+    const imgY = pageHeight - imgHeight - margin;
+
+    page1.drawImage(imageEmbed, {
+      x: imgX,
+      y: imgY,
+      width: imgWidth,
+      height: imgHeight,
+    });
+
+    const transcriptionText = doc.transcription?.text || '';
+    if (transcriptionText) {
+      const page2 = pdfDoc.addPage();
+      const fontSize = 12;
+      let cursorY = page2.getHeight() - margin;
+
+      page2.drawText('Transcrição:', { x: margin, y: cursorY, size: 16, font });
+      cursorY -= fontSize * 2;
+
+      page2.drawText(transcriptionText, {
+        x: margin,
+        y: cursorY,
+        size: fontSize,
+        font,
+        maxWidth: page2.getWidth() - 2 * margin,
+        lineHeight: fontSize * 1.2,
+      });
+    }
+
+    const completions = doc.transcription?.aiCompletions || [];
+    if (completions.length > 0) {
+      let page = pdfDoc.addPage();
+      const fontSize = 12;
+      let cursorY = page.getHeight() - margin;
+
+      const lineHeight = fontSize * 1.2;
+
+      for (let i = 0; i < completions.length; i++) {
+        const { prompt, response } = completions[i];
+
+        const promptText = `Pergunta ${i + 1}: ${prompt}`;
+        const responseText = `Resposta: ${response}`;
+
+        const wrapText = (text: string, maxWidth: number) => {
+          const words = text.split(' ');
+          const lines: string[] = [];
+          let line = '';
+          for (const word of words) {
+            const testLine = line ? `${line} ${word}` : word;
+            const width = font.widthOfTextAtSize(testLine, fontSize);
+            if (width > maxWidth) {
+              lines.push(line);
+              line = word;
+            } else {
+              line = testLine;
+            }
+          }
+          if (line) lines.push(line);
+          return lines;
+        };
+
+        const promptLines = wrapText(
+          promptText.replace(/\n/g, ' '),
+          page.getWidth() - 2 * margin,
+        );
+        const responseLines = wrapText(
+          responseText.replace(/\n/g, ' '),
+          page.getWidth() - 2 * margin,
+        );
+
+        for (const line of [...promptLines, ...responseLines, '']) {
+          if (cursorY < margin) {
+            page = pdfDoc.addPage();
+            cursorY = page.getHeight() - margin;
+          }
+          page.drawText(line, {
+            x: margin,
+            y: cursorY,
+            size: fontSize,
+            font,
+            lineHeight,
+          });
+          cursorY -= lineHeight;
+        }
+      }
+    }
+
+    const pdfBytes = await pdfDoc.save();
 
     return {
-      stream: createReadStream(filePath),
-      mimeType: doc.mimeType,
-      filename: doc.key,
+      buffer: Buffer.from(pdfBytes),
+      mimeType: 'application/pdf',
+      filename: doc.key.replace(/\.(jpg|jpeg|png)$/i, '.pdf'),
     };
   }
 
