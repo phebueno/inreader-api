@@ -11,6 +11,7 @@ import { DocumentsModule } from '@/documents/documents.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { TranscriptionsModule } from '@/transcriptions/transcriptions.module';
 import { UsersModule } from '@/users/users.module';
+import { SupabaseModule } from './supabase/supabase.module';
 @Module({
   imports: [
     PrismaModule,
@@ -22,14 +23,15 @@ import { UsersModule } from '@/users/users.module';
     DocumentsModule,
     TranscriptionsModule,
     AiCompletionsModule,
+    SupabaseModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    // {
-    //   provide: APP_FILTER,
-    //   useClass: AllExceptionsFilter,
-    // },
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
   ],
 })
 export class AppModule {}
