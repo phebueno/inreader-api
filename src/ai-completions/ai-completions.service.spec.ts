@@ -21,6 +21,7 @@ describe('AiCompletionsService', () => {
   let service: AiCompletionsService;
   let prisma: any;
   let transcriptionService: any;
+  let supabaseService: { downloadFile: jest.Mock };
 
   const mockUser = 'user-id';
   const mockTranscription = {
@@ -50,11 +51,16 @@ describe('AiCompletionsService', () => {
       getVerifiedTranscription: jest.fn().mockResolvedValue(mockTranscription),
     };
 
+      supabaseService = {
+    downloadFile: jest.fn().mockResolvedValue(Buffer.from('fake-image')),
+  };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AiCompletionsService,
         { provide: PrismaService, useValue: prisma },
         { provide: TranscriptionsService, useValue: transcriptionService },
+        { provide: SupabaseService, useValue: supabaseService },
         {
           provide: SupabaseService,
           useValue: { upload: jest.fn(), delete: jest.fn() },

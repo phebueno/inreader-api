@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@/prisma/prisma.service';
+import { SupabaseService } from '@/supabase/supabase.service';
 import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 import * as fs from 'fs';
 
@@ -20,30 +21,26 @@ jest.mock('tesseract.js', () => ({
 describe('TranscriptionsService', () => {
   let service: TranscriptionsService;
   let prisma: {
-    document: {
-      findUnique: jest.Mock;
-    };
-    transcription: {
-      findUnique: jest.Mock;
-      create: jest.Mock;
-    };
+    document: { findUnique: jest.Mock };
+    transcription: { findUnique: jest.Mock; create: jest.Mock };
   };
+  let supabase: { downloadFile: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
-      document: {
-        findUnique: jest.fn(),
-      },
-      transcription: {
-        findUnique: jest.fn(),
-        create: jest.fn(),
-      },
+      document: { findUnique: jest.fn() },
+      transcription: { findUnique: jest.fn(), create: jest.fn() },
+    };
+
+    supabase = {
+      downloadFile: jest.fn().mockResolvedValue(Buffer.from('fake-image')),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TranscriptionsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: SupabaseService, useValue: supabase },
       ],
     }).compile();
 
@@ -67,6 +64,7 @@ describe('TranscriptionsService', () => {
 
     it('should throw NotFoundException if transcription does not exist', async () => {
       prisma.transcription.findUnique.mockResolvedValue(null);
+
       await expect(
         service.getVerifiedTranscription('user', '1'),
       ).rejects.toThrow(NotFoundException);
@@ -107,6 +105,7 @@ describe('TranscriptionsService', () => {
 
     it('should throw NotFoundException if document does not exist', async () => {
       prisma.document.findUnique.mockResolvedValue(null);
+
       await expect(service.transcribeDocument('user', '1')).rejects.toThrow(
         NotFoundException,
       );
@@ -118,6 +117,7 @@ describe('TranscriptionsService', () => {
         userId: 'other',
         status: 'PENDING',
       });
+
       await expect(service.transcribeDocument('user', '1')).rejects.toThrow(
         ForbiddenException,
       );
@@ -130,6 +130,7 @@ describe('TranscriptionsService', () => {
         status: 'DONE',
       });
       prisma.transcription.findUnique.mockResolvedValue({ id: 't1' });
+
       await expect(service.transcribeDocument('user', '1')).rejects.toThrow(
         ConflictException,
       );
@@ -150,6 +151,7 @@ describe('TranscriptionsService', () => {
 
     it('should throw NotFoundException if document does not exist', async () => {
       prisma.document.findUnique.mockResolvedValue(null);
+
       await expect(service.getByDocument('user', '1')).rejects.toThrow(
         NotFoundException,
       );
@@ -160,6 +162,7 @@ describe('TranscriptionsService', () => {
         id: '1',
         userId: 'other',
       });
+
       await expect(service.getByDocument('user', '1')).rejects.toThrow(
         ForbiddenException,
       );
