@@ -58,11 +58,32 @@ export class SupabaseService implements OnModuleInit {
     return key;
   }
 
-  getClient() {
-    return this.supabase;
+  async deleteFile(key: string): Promise<void> {
+    const { error } = await this.supabase.storage
+      .from(this.bucket)
+      .remove([key]);
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error deleting file "${key}": ${error.message}`,
+      );
+    }
+
+    this.logger.log(`File "${key}" deleted successfully from bucket.`);
   }
 
-  getBucket() {
-    return this.bucket;
+  async downloadFile(key: string): Promise<Buffer> {
+    const { data, error } = await this.supabase.storage
+      .from(this.bucket)
+      .download(key);
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error downloading file "${key}": ${error.message}`,
+      );
+    }
+
+    const buffer = Buffer.from(await data.arrayBuffer());
+    return buffer;
   }
 }
