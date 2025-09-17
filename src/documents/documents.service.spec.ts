@@ -5,6 +5,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 import { TranscriptionsGateway } from '@/transcriptions/transcriptions.gateway';
 import { existsSync, createReadStream } from 'fs';
+import { generatePdfFromImageAndTranscription } from '@/utils/pdf.utils';
 import { unlink } from 'fs/promises';
 import { SupabaseService } from '@/supabase/supabase.service';
 
@@ -26,6 +27,11 @@ jest.mock('tesseract.js', () => ({
     terminate: jest.fn(),
   })),
 }));
+jest.mock('@/utils/pdf.utils', () => ({
+  generatePdfFromImageAndTranscription: jest
+    .fn()
+    .mockResolvedValue(Buffer.from('fake-pdf')),
+}));
 
 describe('DocumentsService', () => {
   let service: DocumentsService;
@@ -42,18 +48,11 @@ describe('DocumentsService', () => {
   let gateway: { sendTranscriptionUpdate: jest.Mock };
   let supabaseMock: any;
 
-  // Buffers válidos de PNG e JPEG para testes
-  const fakePng = Buffer.from(
-    '89504e470d0a1a0a0000000d4948445200000001000000010806000000' +
-    '1f15c4890000000a49444154789c6360000002000100ff0ff2a5b20000000049454e44ae426082',
-    'hex'
-  );
-
   const fakeJpg = Buffer.from(
     'ffd8ffe000104a46494600010101006000600000ffdb00430008060607060508070707090a0c14' +
-    '0d0c0b0b0c19120f141e1a1f1e1d1a1c1c20242730272d26201c1c282d2f2e2b2c2c30361f3830' +
-    '32323631',
-    'hex'
+      '0d0c0b0b0c19120f141e1a1f1e1d1a1c1c20242730272d26201c1c282d2f2e2b2c2c30361f3830' +
+      '32323631',
+    'hex',
   );
 
   beforeEach(async () => {
@@ -77,7 +76,7 @@ describe('DocumentsService', () => {
 
     supabaseMock = {
       uploadFile: jest.fn().mockResolvedValue('fake-key'),
-      downloadFile: jest.fn().mockResolvedValue(fakeJpg), // JPEG válido
+      downloadFile: jest.fn().mockResolvedValue(fakeJpg),
       deleteFile: jest.fn().mockResolvedValue(true),
     };
 
@@ -209,42 +208,57 @@ describe('DocumentsService', () => {
   });
 
   describe('getDocumentStream', () => {
-    it('should return a file stream if file exists', async () => {
+    it('should generate a PDF from image and transcription', async () => {
       const mockDoc = {
         id: '1',
         key: 'file.jpg',
         userId: 'user',
         mimeType: 'image/jpeg',
+        transcription: { text: 'mocked transcription', aiCompletions: [] },
       };
+
       prisma.document.findUnique.mockResolvedValue(mockDoc as any);
-      (existsSync as jest.Mock).mockReturnValue(true);
-      (createReadStream as jest.Mock).mockReturnValue('stream' as any);
       supabaseMock.downloadFile.mockResolvedValue(fakeJpg);
 
       const result = await service.getDocumentStream('1', 'user');
+
+      expect(generatePdfFromImageAndTranscription).toHaveBeenCalledWith(
+        fakeJpg,
+        mockDoc,
+      );
+
       expect(result).toEqual({
-        stream: 'stream',
-        mimeType: 'image/jpeg',
-        filename: 'file.jpg',
+        buffer: Buffer.from('fake-pdf'),
+        mimeType: 'application/pdf',
+        filename: 'file.pdf',
       });
     });
 
-    it('should throw NotFoundException if file does not exist', async () => {
+    it('should return original buffer if options.original is true', async () => {
+      jest.clearAllMocks();
+
       const mockDoc = {
         id: '1',
         key: 'file.jpg',
         userId: 'user',
         mimeType: 'image/jpeg',
+        transcription: { text: 'mocked transcription', aiCompletions: [] },
       };
+
       prisma.document.findUnique.mockResolvedValue(mockDoc as any);
-      (existsSync as jest.Mock).mockReturnValue(false);
-      supabaseMock.downloadFile.mockImplementation(() => {
-        throw new NotFoundException('File not found');
+      supabaseMock.downloadFile.mockResolvedValue(fakeJpg);
+
+      const result = await service.getDocumentStream('1', 'user', {
+        original: true,
       });
 
-      await expect(service.getDocumentStream('1', 'user')).rejects.toThrow(
-        NotFoundException,
-      );
+      expect(result).toEqual({
+        buffer: fakeJpg,
+        mimeType: 'image/jpeg',
+        filename: 'file.jpg',
+      });
+
+      expect(generatePdfFromImageAndTranscription).not.toHaveBeenCalled();
     });
   });
 

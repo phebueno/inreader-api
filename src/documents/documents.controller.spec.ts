@@ -105,20 +105,18 @@ describe('DocumentsController', () => {
   });
 
   describe('download', () => {
-    it('should set headers and call pipe', async () => {
+    it('should set headers and call res.end with buffer', async () => {
       const mockUser = { sub: 'user-id' } as any;
 
-      const mockStream = new PassThrough();
-      const pipeSpy = jest
-        .spyOn(mockStream, 'pipe')
-        .mockImplementation(() => mockStream);
+      const fakeBuffer = Buffer.from('fake-content');
 
       const mockRes = {
         setHeader: jest.fn(),
+        end: jest.fn(),
       } as any as Response;
 
       mockDocumentsService.getDocumentStream.mockResolvedValue({
-        stream: mockStream,
+        buffer: fakeBuffer,
         mimeType: 'image/png',
         filename: 'doc.png',
       });
@@ -128,6 +126,7 @@ describe('DocumentsController', () => {
       expect(mockDocumentsService.getDocumentStream).toHaveBeenCalledWith(
         'doc-id',
         mockUser.sub,
+        { original: true }, // ⚡ importante: o controller passa essa opção
       );
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Content-Type',
@@ -137,7 +136,7 @@ describe('DocumentsController', () => {
         'Content-Disposition',
         'attachment; filename="doc.png"',
       );
-      expect(pipeSpy).toHaveBeenCalledWith(mockRes);
+      expect(mockRes.end).toHaveBeenCalledWith(fakeBuffer);
     });
   });
 
