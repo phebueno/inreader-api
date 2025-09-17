@@ -10,6 +10,6 @@ import { SupabaseModule } from '@/supabase/supabase.module';
 @Module({
   controllers: [DocumentsController],
   providers: [DocumentsService, SupabaseService],
-  imports: [PrismaModule, TranscriptionsModule, SupabaseModule],
+  imports: [PrismaModule, TranscriptionsModule],
 })
 export class DocumentsModule {}

@@ -19,6 +19,8 @@ export class SupabaseService implements OnModuleInit {
   private readonly bucket = SUPABASE_BUCKET;
   private readonly logger = new Logger(SupabaseService.name);
 
+  private static bucketChecked = false;
+
   constructor() {
     this.supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
       auth: { persistSession: false },
@@ -26,7 +28,10 @@ export class SupabaseService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    await this.ensureBucketExists();
+    if (!SupabaseService.bucketChecked) {
+      await this.ensureBucketExists();
+      SupabaseService.bucketChecked = true;
+    }
   }
 
   async ensureBucketExists() {
