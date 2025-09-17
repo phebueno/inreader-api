@@ -10,21 +10,20 @@ import {
 import { createWorker } from 'tesseract.js';
 
 import { PrismaService } from '@/prisma/prisma.service';
+import { SupabaseService } from '@/supabase/supabase.service';
 
 @Injectable()
 export class TranscriptionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService,
+    private supabaseService: SupabaseService
+  ) {}
 
-  private async extractTextFromImage(filePath: string) {
+  private async extractTextFromImage(key: string) {
     try {
-      const fullPath = path.join(__dirname, '..', '..', filePath);
-
-      if (!fs.existsSync(fullPath)) {
-        throw new NotFoundException(`File not found at path: ${fullPath}`);
-      }
+      const buffer = await this.supabaseService.downloadFile(key);      
 
       const worker = await createWorker('por');
-      const ret = await worker.recognize(fullPath);
+      const ret = await worker.recognize(buffer);
       await worker.terminate();
 
       return ret.data.text;

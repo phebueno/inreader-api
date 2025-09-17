@@ -38,11 +38,10 @@ export class DocumentsController {
 
   @Post('upload')
   @UseInterceptors(
-      FileInterceptor('file', {
-    storage: memoryStorage(),
-  }),
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+    }),
   )
-
   @UploadDocumentDoc()
   async uploadDocument(
     @UploadedFile(
@@ -96,11 +95,7 @@ export class DocumentsController {
       `attachment; filename="${result.filename}"`,
     );
 
-    if (result.stream) {
-      result.stream.pipe(res);
-    } else if (result.buffer) {
-      res.end(result.buffer);
-    }
+    res.end(result.buffer);
   }
 
   @Get(':id/download/full')

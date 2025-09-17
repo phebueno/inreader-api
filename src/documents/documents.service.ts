@@ -122,21 +122,16 @@ export class DocumentsService {
     options?: { original?: boolean },
   ) {
     const doc = await this.findOneDeep(id, userId);
-    const filePath = join(process.cwd(), doc.key);
-
-    if (!existsSync(filePath)) {
-      throw new NotFoundException('File not found');
-    }
+    const buffer = await this.supabaseService.downloadFile(doc.key);
 
     if (options?.original) {
       return {
-        stream: createReadStream(filePath),
+        buffer,
         mimeType: doc.mimeType,
         filename: doc.key,
       };
     }
 
-    const imageBytes = await fs.readFile(filePath);
     const pdfDoc = await PDFDocument.create();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
@@ -147,8 +142,8 @@ export class DocumentsService {
 
     let imageEmbed;
     if (doc.mimeType === 'image/png')
-      imageEmbed = await pdfDoc.embedPng(imageBytes);
-    else imageEmbed = await pdfDoc.embedJpg(imageBytes);
+      imageEmbed = await pdfDoc.embedPng(buffer);
+    else imageEmbed = await pdfDoc.embedJpg(buffer);
 
     const { width: imgWidth, height: imgHeight } = imageEmbed.scaleToFit(
       pageWidth - 2 * margin,
@@ -252,15 +247,8 @@ export class DocumentsService {
 
   async remove(id: string, userId: string) {
     const doc = await this.findOne(id, userId);
-    const filePath = join(process.cwd(), doc.key);
 
-    if (existsSync(filePath)) {
-      try {
-        await unlink(filePath);
-      } catch (err) {
-        console.error(`Erro ao deletar o arquivo ${filePath}:`, err);
-      }
-    }
+    await this.supabaseService.deleteFile(doc.key);
 
     return this.prisma.document.delete({
       where: { id: doc.id },
