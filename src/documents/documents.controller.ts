@@ -1,6 +1,3 @@
-import { randomUUID } from 'crypto';
-import { extname } from 'path';
-
 import {
   Controller,
   Get,
@@ -18,7 +15,7 @@ import {
   FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 
 import { DocumentsService } from '@/documents/documents.service';
 import { AuthGuard } from '@/auth/guards/auth.guard';
@@ -41,16 +38,11 @@ export class DocumentsController {
 
   @Post('upload')
   @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, cb) => {
-          const uniqueName = `${randomUUID()}${extname(file.originalname)}`;
-          cb(null, uniqueName);
-        },
-      }),
-    }),
+      FileInterceptor('file', {
+    storage: memoryStorage(),
+  }),
   )
+
   @UploadDocumentDoc()
   async uploadDocument(
     @UploadedFile(

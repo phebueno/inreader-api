@@ -15,7 +15,7 @@ export class DocumentEntity {
 
   @ApiProperty({
     description: 'Caminho/local do arquivo no servidor',
-    example: 'uploads/e3446355-fe78-4fbb-88a7-c5ce03eb7cce.png',
+    example: 'e3446355-fe78-4fbb-88a7-c5ce03eb7cce.png',
   })
   key: string;
 

@@ -1,30 +1,38 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '@/prisma/prisma.service';
 import { TranscriptionsGateway } from '@/transcriptions/transcriptions.gateway';
 import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
-import { join } from 'path';
+import { extname, join } from 'path';
 import { createReadStream, existsSync, promises as fs } from 'fs';
 import { unlink } from 'fs/promises';
 import { DocumentDto } from '@/documents/dto/document.dto';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
+import { SupabaseService } from '@/supabase/supabase.service';
 
 @Injectable()
 export class DocumentsService {
   constructor(
     private prisma: PrismaService,
+    private supabaseService: SupabaseService,
     private transcriptionsService: TranscriptionsService,
     private gateway: TranscriptionsGateway,
   ) {}
 
   async createDocument(userId: string, file: Express.Multer.File) {
-    const localPath = file.path;
+    const key = await this.supabaseService.uploadFile(file);
 
     try {
       const doc = await this.prisma.document.create({
         data: {
           userId,
-          key: localPath,
+          key,
           mimeType: file.mimetype,
           status: 'PENDING',
         },
@@ -113,7 +121,7 @@ export class DocumentsService {
     userId: string,
     options?: { original?: boolean },
   ) {
-    const doc = await this.findOneDeep(id, userId)
+    const doc = await this.findOneDeep(id, userId);
     const filePath = join(process.cwd(), doc.key);
 
     if (!existsSync(filePath)) {
