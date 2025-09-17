@@ -4,6 +4,7 @@ import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 import { NotFoundException } from '@nestjs/common';
 import { AiCompletionsService } from '@/ai-completions/ai-completions.service';
 import { CreateAiCompletionDto } from '@/ai-completions/dto/create-ai-completion.dto';
+import { SupabaseService } from '@/supabase/supabase.service';
 
 const mockGenerateContent = jest.fn();
 const mockText = jest.fn();
@@ -54,12 +55,15 @@ describe('AiCompletionsService', () => {
         AiCompletionsService,
         { provide: PrismaService, useValue: prisma },
         { provide: TranscriptionsService, useValue: transcriptionService },
+        {
+          provide: SupabaseService,
+          useValue: { upload: jest.fn(), delete: jest.fn() },
+        },
       ],
     }).compile();
 
     service = module.get<AiCompletionsService>(AiCompletionsService);
 
-    // 🔹 Configura os mocks do Gemini
     mockText.mockReturnValue(aiResponseText);
     mockGenerateContent.mockResolvedValue({
       response: {
@@ -155,39 +159,33 @@ describe('AiCompletionsService', () => {
   });
 
   describe('buildMessages', () => {
-    it('should build the correct messages array', () => {
-      const prompt = 'Summarize this';
-      const transcriptionText = 'transcription text';
+    it('should pass correctly built messages to generateContent', async () => {
+      const promptDto = { prompt: 'Pergunta teste' };
 
-      const messages = service['buildMessages'](prompt, transcriptionText);
+      await service.createAiCompletion(mockUser, 't1', promptDto);
 
-      expect(messages).toHaveLength(2);
-
-      expect(messages[0]).toEqual({
-        role: 'system',
-        parts: [
-          {
-            text: expect.stringContaining(
-              'Você é uma IA que analisa textos já extraídos de documentos de imagens',
-            ),
-          },
+      expect(mockGenerateContent).toHaveBeenCalledWith({
+        contents: [
+          expect.objectContaining({
+            role: 'user',
+            parts: [
+              {
+                text: expect.stringContaining(
+                  'Você é uma IA que analisa textos já extraídos',
+                ),
+              },
+            ],
+          }),
+          expect.objectContaining({
+            role: 'user',
+            parts: [
+              {
+                text: expect.stringContaining('Pergunta teste'),
+              },
+            ],
+          }),
         ],
       });
-
-      expect(messages[1]).toEqual({
-        role: 'user',
-        parts: [
-          {
-            text: expect.stringContaining(
-              '- Pergunta do Usuário: Summarize this',
-            ),
-          },
-        ],
-      });
-
-      expect(messages[1].parts[0].text).toContain(
-        '- Texto Extraído para Análise: transcription text',
-      );
     });
   });
 });
