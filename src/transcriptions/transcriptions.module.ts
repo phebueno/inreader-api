@@ -11,7 +11,7 @@ import { SupabaseService } from '@/supabase/supabase.service';
 @Module({
   controllers: [TranscriptionsController],
   providers: [TranscriptionsService, TranscriptionsGateway, SupabaseService],
-  imports: [PrismaModule],
+  imports: [PrismaModule, SupabaseModule],
   exports: [TranscriptionsService, TranscriptionsGateway],
 })
 export class TranscriptionsModule {}
