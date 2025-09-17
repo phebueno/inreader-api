@@ -29,6 +29,7 @@ import {
   RemoveDocumentDoc,
   UploadDocumentDoc,
 } from '@/documents/docs/documents.doc';
+import { CustomFileTypeValidator } from '@/core/pipes/custom-file-type.validator';
 
 @ApiTags('documents')
 @Controller('documents')
@@ -46,14 +47,15 @@ export class DocumentsController {
   async uploadDocument(
     @UploadedFile(
       new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
-          new FileTypeValidator({
-            fileType: /^image/,
-            skipMagicNumbersValidation: true,
-          }),
-        ],
+        validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
       }),
+      new CustomFileTypeValidator([
+        'image/bmp',
+        'image/jpeg',
+        'image/png',
+        'image/x-portable-bitmap',
+        'image/webp',
+      ]),
     )
     file: Express.Multer.File,
     @Req() req: AuthenticatedRequest,
