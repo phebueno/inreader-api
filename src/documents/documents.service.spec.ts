@@ -6,6 +6,7 @@ import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 import { TranscriptionsGateway } from '@/transcriptions/transcriptions.gateway';
 import { existsSync, createReadStream } from 'fs';
 import { unlink } from 'fs/promises';
+import { SupabaseService } from '@/supabase/supabase.service';
 
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
@@ -19,7 +20,9 @@ jest.mock('tesseract.js', () => ({
     load: jest.fn(),
     loadLanguage: jest.fn(),
     initialize: jest.fn(),
-    recognize: jest.fn().mockResolvedValue({ data: { text: 'mocked transcription' } }),
+    recognize: jest
+      .fn()
+      .mockResolvedValue({ data: { text: 'mocked transcription' } }),
     terminate: jest.fn(),
   })),
 }));
@@ -37,6 +40,21 @@ describe('DocumentsService', () => {
   };
   let transcriptionsService: { transcribeDocument: jest.Mock };
   let gateway: { sendTranscriptionUpdate: jest.Mock };
+  let supabaseMock: any;
+
+  // Buffers válidos de PNG e JPEG para testes
+  const fakePng = Buffer.from(
+    '89504e470d0a1a0a0000000d4948445200000001000000010806000000' +
+    '1f15c4890000000a49444154789c6360000002000100ff0ff2a5b20000000049454e44ae426082',
+    'hex'
+  );
+
+  const fakeJpg = Buffer.from(
+    'ffd8ffe000104a46494600010101006000600000ffdb00430008060607060508070707090a0c14' +
+    '0d0c0b0b0c19120f141e1a1f1e1d1a1c1c20242730272d26201c1c282d2f2e2b2c2c30361f3830' +
+    '32323631',
+    'hex'
+  );
 
   beforeEach(async () => {
     prisma = {
@@ -57,10 +75,17 @@ describe('DocumentsService', () => {
       sendTranscriptionUpdate: jest.fn(),
     };
 
+    supabaseMock = {
+      uploadFile: jest.fn().mockResolvedValue('fake-key'),
+      downloadFile: jest.fn().mockResolvedValue(fakeJpg), // JPEG válido
+      deleteFile: jest.fn().mockResolvedValue(true),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DocumentsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: SupabaseService, useValue: supabaseMock },
         { provide: TranscriptionsService, useValue: transcriptionsService },
         { provide: TranscriptionsGateway, useValue: gateway },
       ],
@@ -187,31 +212,35 @@ describe('DocumentsService', () => {
     it('should return a file stream if file exists', async () => {
       const mockDoc = {
         id: '1',
-        key: 'file.txt',
+        key: 'file.jpg',
         userId: 'user',
-        mimeType: 'text/plain',
+        mimeType: 'image/jpeg',
       };
       prisma.document.findUnique.mockResolvedValue(mockDoc as any);
       (existsSync as jest.Mock).mockReturnValue(true);
       (createReadStream as jest.Mock).mockReturnValue('stream' as any);
+      supabaseMock.downloadFile.mockResolvedValue(fakeJpg);
 
       const result = await service.getDocumentStream('1', 'user');
       expect(result).toEqual({
         stream: 'stream',
-        mimeType: 'text/plain',
-        filename: 'file.txt',
+        mimeType: 'image/jpeg',
+        filename: 'file.jpg',
       });
     });
 
     it('should throw NotFoundException if file does not exist', async () => {
       const mockDoc = {
         id: '1',
-        key: 'file.txt',
+        key: 'file.jpg',
         userId: 'user',
-        mimeType: 'text/plain',
+        mimeType: 'image/jpeg',
       };
       prisma.document.findUnique.mockResolvedValue(mockDoc as any);
       (existsSync as jest.Mock).mockReturnValue(false);
+      supabaseMock.downloadFile.mockImplementation(() => {
+        throw new NotFoundException('File not found');
+      });
 
       await expect(service.getDocumentStream('1', 'user')).rejects.toThrow(
         NotFoundException,
