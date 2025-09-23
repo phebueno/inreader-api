@@ -37,32 +37,105 @@ export async function generatePdfFromImageAndTranscription(
     height: imgHeight,
   });
 
+  await appendTextAndCompletions(pdfDoc, doc, font, margin);
+
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
+}
+
+export async function appendTranscriptionToPdf(
+  buffer: Buffer,
+  doc: DocumentWithTranscription,
+) {
+  const pdfDoc = await PDFDocument.load(buffer);
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  const margin = 50;
+
+  await appendTextAndCompletions(pdfDoc, doc, font, margin);
+
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
+}
+
+function sanitizeText(text: string) {
+  return text.replace(/[^\x00-\x7F]/g, '');
+}
+
+async function appendTextAndCompletions(
+  pdfDoc: PDFDocument,
+  doc: DocumentWithTranscription,
+  font: any,
+  margin: number,
+) {
   const transcriptionText = doc.transcription?.text || '';
   if (transcriptionText) {
-    const page2 = pdfDoc.addPage();
+    const page = pdfDoc.addPage();
     const fontSize = 12;
-    let cursorY = page2.getHeight() - margin;
+    let cursorY = page.getHeight() - margin;
 
-    page2.drawText('Transcrição:', { x: margin, y: cursorY, size: 16, font });
+    page.drawText('Transcrição:', { x: margin, y: cursorY, size: 16, font });
     cursorY -= fontSize * 2;
 
-    page2.drawText(transcriptionText, {
-      x: margin,
-      y: cursorY,
-      size: fontSize,
-      font,
-      maxWidth: page2.getWidth() - 2 * margin,
-      lineHeight: fontSize * 1.2,
-    });
+    const wrapText = (text: string, maxWidth: number) => {
+      const words = text.split(' ');
+      const lines: string[] = [];
+      let line = '';
+      for (const word of words) {
+        const testLine = line ? `${line} ${word}` : word;
+        const width = font.widthOfTextAtSize(testLine, fontSize);
+        if (width > maxWidth) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = testLine;
+        }
+      }
+      if (line) lines.push(line);
+      return lines;
+    };
+
+    const lines = wrapText(
+      sanitizeText(transcriptionText.replace(/\n/g, ' ')),
+      page.getWidth() - 2 * margin,
+    );
+
+    for (const line of lines) {
+      if (cursorY < margin) {
+        const newPage = pdfDoc.addPage();
+        cursorY = newPage.getHeight() - margin;
+        page.drawText(sanitizeText(line), { x: margin, y: cursorY, size: fontSize, font });
+      } else {
+        page.drawText(sanitizeText(line), { x: margin, y: cursorY, size: fontSize, font });
+      }
+      cursorY -= fontSize * 1.2;
+    }
   }
 
   const completions = doc.transcription?.aiCompletions || [];
   if (completions.length > 0) {
     let page = pdfDoc.addPage();
     const fontSize = 12;
+    const lineHeight = fontSize * 1.2;
     let cursorY = page.getHeight() - margin;
 
-    const lineHeight = fontSize * 1.2;
+    const wrapText = (text: string, maxWidth: number) => {
+      const words = text.split(' ');
+      const lines: string[] = [];
+      let line = '';
+      for (const word of words) {
+        const testLine = line ? `${line} ${word}` : word;
+        const width = font.widthOfTextAtSize(testLine, fontSize);
+        if (width > maxWidth) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = testLine;
+        }
+      }
+      if (line) lines.push(line);
+      return lines;
+    };
 
     for (let i = 0; i < completions.length; i++) {
       const { prompt, response } = completions[i];
@@ -70,30 +143,12 @@ export async function generatePdfFromImageAndTranscription(
       const promptText = `Pergunta ${i + 1}: ${prompt}`;
       const responseText = `Resposta: ${response}`;
 
-      const wrapText = (text: string, maxWidth: number) => {
-        const words = text.split(' ');
-        const lines: string[] = [];
-        let line = '';
-        for (const word of words) {
-          const testLine = line ? `${line} ${word}` : word;
-          const width = font.widthOfTextAtSize(testLine, fontSize);
-          if (width > maxWidth) {
-            lines.push(line);
-            line = word;
-          } else {
-            line = testLine;
-          }
-        }
-        if (line) lines.push(line);
-        return lines;
-      };
-
       const promptLines = wrapText(
-        promptText.replace(/\n/g, ' '),
+        sanitizeText(promptText.replace(/\n/g, ' ')),
         page.getWidth() - 2 * margin,
       );
       const responseLines = wrapText(
-        responseText.replace(/\n/g, ' '),
+        sanitizeText(responseText.replace(/\n/g, ' ')),
         page.getWidth() - 2 * margin,
       );
 
@@ -102,7 +157,7 @@ export async function generatePdfFromImageAndTranscription(
           page = pdfDoc.addPage();
           cursorY = page.getHeight() - margin;
         }
-        page.drawText(line, {
+        page.drawText(sanitizeText(line), {
           x: margin,
           y: cursorY,
           size: fontSize,
@@ -113,7 +168,4 @@ export async function generatePdfFromImageAndTranscription(
       }
     }
   }
-
-  const pdfBytes = await pdfDoc.save();
-  return Buffer.from(pdfBytes);
 }

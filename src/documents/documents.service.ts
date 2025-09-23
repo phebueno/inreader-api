@@ -9,7 +9,7 @@ import { TranscriptionsGateway } from '@/transcriptions/transcriptions.gateway';
 import { TranscriptionsService } from '@/transcriptions/transcriptions.service';
 import { DocumentDto } from '@/documents/dto/document.dto';
 import { SupabaseService } from '@/supabase/supabase.service';
-import { generatePdfFromImageAndTranscription } from '@/utils/pdf.utils';
+import { appendTranscriptionToPdf, generatePdfFromImageAndTranscription } from '@/utils/pdf.utils';
 
 @Injectable()
 export class DocumentsService {
@@ -127,7 +127,13 @@ export class DocumentsService {
       };
     }
 
-    const pdfBuffer = await generatePdfFromImageAndTranscription(buffer, doc);
+    let pdfBuffer: Buffer;
+
+    if (doc.mimeType === 'application/pdf') {
+      pdfBuffer = await appendTranscriptionToPdf(buffer, doc);
+    } else {
+      pdfBuffer = await generatePdfFromImageAndTranscription(buffer, doc);
+    }
 
     return {
       buffer: pdfBuffer,
