@@ -1,6 +1,3 @@
-import * as path from 'path';
-import * as fs from 'fs';
-
 import {
   ConflictException,
   ForbiddenException,
@@ -8,27 +5,53 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createWorker } from 'tesseract.js';
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import { PrismaService } from '@/prisma/prisma.service';
 import { SupabaseService } from '@/supabase/supabase.service';
 
 @Injectable()
 export class TranscriptionsService {
-  constructor(private prisma: PrismaService,
-    private supabaseService: SupabaseService
+  constructor(
+    private prisma: PrismaService,
+    private supabaseService: SupabaseService,
   ) {}
 
-  private async extractTextFromImage(key: string) {
+  private async extractTextFromPdf(
+    buffer: Buffer<ArrayBufferLike>,
+  ): Promise<string> {
     try {
-      const buffer = await this.supabaseService.downloadFile(key);      
+      const uint8Array = new Uint8Array(buffer);
+      const pdfDocument = await getDocument({ data: uint8Array }).promise;
 
-      const worker = await createWorker('por');
-      const ret = await worker.recognize(buffer);
-      await worker.terminate();
+      let extractedText = '';
+      for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+        const page = await pdfDocument.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        extractedText += pageText + '\n';
+      }
 
-      return ret.data.text;
+      return extractedText;
     } catch (error) {
-      throw new Error('Transcription failed!');
+      console.error('PDF extraction error:', error);
+      throw new Error('Failed to extract text from PDF');
+    }
+  }
+
+  private async extractTextFromImage(
+    buffer: Buffer<ArrayBufferLike>,
+  ): Promise<string> {
+    try {
+      const worker = await createWorker('por');
+      const result = await worker.recognize(buffer);
+      await worker.terminate();
+      return result.data.text;
+    } catch (error) {
+      console.error('Image OCR error:', error);
+      throw new Error('Failed to extract text from image');
     }
   }
 
@@ -52,32 +75,40 @@ export class TranscriptionsService {
     });
 
     if (!document) throw new NotFoundException('Document not found');
-
     if (document.userId !== userId) {
-      throw new ForbiddenException(
-        'You cannot transcribe a document that is not yours',
-      );
+      throw new ForbiddenException('You cannot transcribe this document');
     }
 
     const existing = await this.prisma.transcription.findUnique({
       where: { documentId },
     });
     if (existing && document.status === 'DONE') {
-      throw new ConflictException(
-        'Transcription already exists for this document',
-      );
+      throw new ConflictException('Transcription already exists');
     }
 
-    const text = await this.extractTextFromImage(document.key);
+    try {
+      // 🔹 baixa o buffer só uma vez
+      const buffer = await this.supabaseService.downloadFile(document.key);
 
-    const transcription = await this.prisma.transcription.create({
-      data: {
-        documentId: document.id,
-        text,
-      },
-    });
+      let text = '';
+      if (document.mimeType === 'application/pdf') {
+        text = await this.extractTextFromPdf(buffer);
+      } else {
+        text = await this.extractTextFromImage(buffer);
+      }
 
-    return transcription;
+      const transcription = await this.prisma.transcription.create({
+        data: {
+          documentId: document.id,
+          text,
+        },
+      });
+
+      return transcription;
+    } catch (error) {
+      console.error('Transcription process error:', error);
+      throw new Error('Transcription failed!');
+    }
   }
 
   async getByDocument(userId: string, documentId: string) {

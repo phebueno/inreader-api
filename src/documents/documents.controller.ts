@@ -55,6 +55,7 @@ export class DocumentsController {
         'image/png',
         'image/x-portable-bitmap',
         'image/webp',
+        'application/pdf'
       ]),
     )
     file: Express.Multer.File,

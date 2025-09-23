@@ -39,6 +39,7 @@
     "multer": "^2.0.2",
     "passport-jwt": "^4.0.1",
     "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.4.149",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
