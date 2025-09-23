@@ -87,7 +87,6 @@ export class TranscriptionsService {
     }
 
     try {
-      // 🔹 baixa o buffer só uma vez
       const buffer = await this.supabaseService.downloadFile(document.key);
 
       let text = '';

@@ -17,12 +17,18 @@ jest.mock('tesseract.js', () => ({
     terminate: jest.fn(),
   })),
 }));
+
 jest.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
   getDocument: jest.fn().mockReturnValue({
     promise: Promise.resolve({
-      numPages: 1,
+      numPages: 2,
       getPage: jest.fn().mockResolvedValue({
-        getTextContent: jest.fn().mockResolvedValue({ items: [] }),
+        getTextContent: jest.fn().mockResolvedValue({
+          items: [
+            { str: 'PDF page 1' },
+            { str: 'PDF page 2' },
+          ],
+        }),
       }),
     }),
   }),
@@ -36,6 +42,9 @@ describe('TranscriptionsService', () => {
   };
   let supabase: { downloadFile: jest.Mock };
 
+  const fakeImage = Buffer.from('fake-image');
+  const fakePdf = Buffer.from('fake-pdf');
+
   beforeEach(async () => {
     prisma = {
       document: { findUnique: jest.fn() },
@@ -43,7 +52,7 @@ describe('TranscriptionsService', () => {
     };
 
     supabase = {
-      downloadFile: jest.fn().mockResolvedValue(Buffer.from('fake-image')),
+      downloadFile: jest.fn().mockResolvedValue(fakeImage),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -91,12 +100,13 @@ describe('TranscriptionsService', () => {
   });
 
   describe('transcribeDocument', () => {
-    it('should create transcription successfully', async () => {
+    it('should create transcription from image successfully', async () => {
       const mockDocument = {
         id: '1',
         key: 'file.png',
         userId: 'user',
         status: 'PENDING',
+        mimeType: 'image/png',
       };
       prisma.document.findUnique.mockResolvedValue(mockDocument);
       prisma.transcription.findUnique.mockResolvedValue(null);
@@ -111,6 +121,28 @@ describe('TranscriptionsService', () => {
       expect(prisma.transcription.create).toHaveBeenCalledWith({
         data: { documentId: '1', text: 'extracted text' },
       });
+    });
+
+    it('should create transcription from PDF successfully', async () => {
+      const mockDocument = {
+        id: '2',
+        key: 'file.pdf',
+        userId: 'user',
+        status: 'PENDING',
+        mimeType: 'application/pdf',
+      };
+      prisma.document.findUnique.mockResolvedValue(mockDocument);
+      prisma.transcription.findUnique.mockResolvedValue(null);
+      prisma.transcription.create.mockResolvedValue({
+        id: 't2',
+        text: 'PDF page 1 PDF page 2\n',
+      });
+
+      supabase.downloadFile.mockResolvedValue(fakePdf);
+
+      const result = await service.transcribeDocument('user', '2');
+
+      expect(result).toEqual({ id: 't2', text: 'PDF page 1 PDF page 2\n' });
     });
 
     it('should throw NotFoundException if document does not exist', async () => {
