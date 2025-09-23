@@ -32,6 +32,16 @@ jest.mock('@/utils/pdf.utils', () => ({
     .fn()
     .mockResolvedValue(Buffer.from('fake-pdf')),
 }));
+jest.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
+  getDocument: jest.fn().mockReturnValue({
+    promise: Promise.resolve({
+      numPages: 1,
+      getPage: jest.fn().mockResolvedValue({
+        getTextContent: jest.fn().mockResolvedValue({ items: [] }),
+      }),
+    }),
+  }),
+}));
 
 describe('DocumentsService', () => {
   let service: DocumentsService;

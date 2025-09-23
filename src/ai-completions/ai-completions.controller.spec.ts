@@ -17,6 +17,17 @@ class MockAuthGuard implements CanActivate {
   }
 }
 
+jest.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
+  getDocument: jest.fn().mockReturnValue({
+    promise: Promise.resolve({
+      numPages: 1,
+      getPage: jest.fn().mockResolvedValue({
+        getTextContent: jest.fn().mockResolvedValue({ items: [] }),
+      }),
+    }),
+  }),
+}));
+
 describe('AiCompletionsController', () => {
   let controller: AiCompletionsController;
   let aiCompletionsService: {

@@ -6,6 +6,17 @@ import { AiCompletionsService } from '@/ai-completions/ai-completions.service';
 import { CreateAiCompletionDto } from '@/ai-completions/dto/create-ai-completion.dto';
 import { SupabaseService } from '@/supabase/supabase.service';
 
+jest.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
+  getDocument: jest.fn().mockReturnValue({
+    promise: Promise.resolve({
+      numPages: 1,
+      getPage: jest.fn().mockResolvedValue({
+        getTextContent: jest.fn().mockResolvedValue({ items: [] }),
+      }),
+    }),
+  }),
+}));
+
 const mockGenerateContent = jest.fn();
 const mockText = jest.fn();
 
@@ -51,9 +62,9 @@ describe('AiCompletionsService', () => {
       getVerifiedTranscription: jest.fn().mockResolvedValue(mockTranscription),
     };
 
-      supabaseService = {
-    downloadFile: jest.fn().mockResolvedValue(Buffer.from('fake-image')),
-  };
+    supabaseService = {
+      downloadFile: jest.fn().mockResolvedValue(Buffer.from('fake-image')),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

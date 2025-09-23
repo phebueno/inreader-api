@@ -17,6 +17,16 @@ jest.mock('tesseract.js', () => ({
     terminate: jest.fn(),
   })),
 }));
+jest.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
+  getDocument: jest.fn().mockReturnValue({
+    promise: Promise.resolve({
+      numPages: 1,
+      getPage: jest.fn().mockResolvedValue({
+        getTextContent: jest.fn().mockResolvedValue({ items: [] }),
+      }),
+    }),
+  }),
+}));
 
 describe('TranscriptionsService', () => {
   let service: TranscriptionsService;

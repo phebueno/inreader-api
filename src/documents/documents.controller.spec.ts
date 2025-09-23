@@ -4,7 +4,6 @@ import { DocumentsService } from '@/documents/documents.service';
 import { AuthGuard } from '@/auth/guards/auth.guard';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Response } from 'express';
-import { PassThrough, Readable } from 'stream';
 
 @Injectable()
 class MockAuthGuard implements CanActivate {
@@ -12,6 +11,17 @@ class MockAuthGuard implements CanActivate {
     return true;
   }
 }
+
+jest.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
+  getDocument: jest.fn().mockReturnValue({
+    promise: Promise.resolve({
+      numPages: 1,
+      getPage: jest.fn().mockResolvedValue({
+        getTextContent: jest.fn().mockResolvedValue({ items: [] }),
+      }),
+    }),
+  }),
+}));
 
 describe('DocumentsController', () => {
   let controller: DocumentsController;
