@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PDFFont, StandardFonts } from 'pdf-lib';
 
 import { Prisma } from '@prisma/client';
 import { DocumentsService } from '@/documents/documents.service';
@@ -83,7 +83,7 @@ function wrapText(text: string, maxWidth: number, font: any, fontSize: number) {
 async function appendTextAndCompletions(
   pdfDoc: PDFDocument,
   doc: DocumentWithTranscription,
-  font: any,
+  font: PDFFont,
   margin: number,
 ) {
   const transcriptionText = doc.transcription?.text || '';
