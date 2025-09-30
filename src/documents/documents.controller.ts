@@ -115,7 +115,7 @@ export class DocumentsController {
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(buffer);
+    res.end(buffer);
   }
 
   @Delete(':id')
