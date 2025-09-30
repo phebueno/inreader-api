@@ -62,6 +62,24 @@ function sanitizeText(text: string) {
   return text.replace(/[^\x00-\x7F]/g, '');
 }
 
+function wrapText(text: string, maxWidth: number, font: any, fontSize: number) {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let line = '';
+  for (const word of words) {
+    const testLine = line ? `${line} ${word}` : word;
+    const width = font.widthOfTextAtSize(testLine, fontSize);
+    if (width > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = testLine;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
 async function appendTextAndCompletions(
   pdfDoc: PDFDocument,
   doc: DocumentWithTranscription,
@@ -77,36 +95,30 @@ async function appendTextAndCompletions(
     page.drawText('Transcrição:', { x: margin, y: cursorY, size: 16, font });
     cursorY -= fontSize * 2;
 
-    const wrapText = (text: string, maxWidth: number) => {
-      const words = text.split(' ');
-      const lines: string[] = [];
-      let line = '';
-      for (const word of words) {
-        const testLine = line ? `${line} ${word}` : word;
-        const width = font.widthOfTextAtSize(testLine, fontSize);
-        if (width > maxWidth) {
-          lines.push(line);
-          line = word;
-        } else {
-          line = testLine;
-        }
-      }
-      if (line) lines.push(line);
-      return lines;
-    };
-
     const lines = wrapText(
       sanitizeText(transcriptionText.replace(/\n/g, ' ')),
       page.getWidth() - 2 * margin,
+      font,
+      fontSize,
     );
 
     for (const line of lines) {
       if (cursorY < margin) {
         const newPage = pdfDoc.addPage();
         cursorY = newPage.getHeight() - margin;
-        page.drawText(sanitizeText(line), { x: margin, y: cursorY, size: fontSize, font });
+        page.drawText(sanitizeText(line), {
+          x: margin,
+          y: cursorY,
+          size: fontSize,
+          font,
+        });
       } else {
-        page.drawText(sanitizeText(line), { x: margin, y: cursorY, size: fontSize, font });
+        page.drawText(sanitizeText(line), {
+          x: margin,
+          y: cursorY,
+          size: fontSize,
+          font,
+        });
       }
       cursorY -= fontSize * 1.2;
     }
@@ -119,24 +131,6 @@ async function appendTextAndCompletions(
     const lineHeight = fontSize * 1.2;
     let cursorY = page.getHeight() - margin;
 
-    const wrapText = (text: string, maxWidth: number) => {
-      const words = text.split(' ');
-      const lines: string[] = [];
-      let line = '';
-      for (const word of words) {
-        const testLine = line ? `${line} ${word}` : word;
-        const width = font.widthOfTextAtSize(testLine, fontSize);
-        if (width > maxWidth) {
-          lines.push(line);
-          line = word;
-        } else {
-          line = testLine;
-        }
-      }
-      if (line) lines.push(line);
-      return lines;
-    };
-
     for (let i = 0; i < completions.length; i++) {
       const { prompt, response } = completions[i];
 
@@ -146,10 +140,14 @@ async function appendTextAndCompletions(
       const promptLines = wrapText(
         sanitizeText(promptText.replace(/\n/g, ' ')),
         page.getWidth() - 2 * margin,
+        font,
+        fontSize,
       );
       const responseLines = wrapText(
         sanitizeText(responseText.replace(/\n/g, ' ')),
         page.getWidth() - 2 * margin,
+        font,
+        fontSize,
       );
 
       for (const line of [...promptLines, ...responseLines, '']) {
