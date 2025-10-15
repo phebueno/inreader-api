@@ -12,6 +12,7 @@ import { PrismaModule } from '@/prisma/prisma.module';
 import { TranscriptionsModule } from '@/transcriptions/transcriptions.module';
 import { UsersModule } from '@/users/users.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     PrismaModule,
@@ -24,6 +25,7 @@ import { SupabaseModule } from './supabase/supabase.module';
     TranscriptionsModule,
     AiCompletionsModule,
     SupabaseModule,
+    ScheduleModule.forRoot()
   ],
   controllers: [AppController],
   providers: [

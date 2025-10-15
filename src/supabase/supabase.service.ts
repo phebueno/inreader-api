@@ -12,6 +12,7 @@ import {
 } from '@/constants/constants';
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class SupabaseService implements OnModuleInit {
@@ -50,6 +51,26 @@ export class SupabaseService implements OnModuleInit {
       this.logger.log(`Bucket "${this.bucket}" created successfully!`);
     }
   }
+
+  @Cron('0 4 * * *')
+  async keepDatabaseAlive() {
+    this.logger.log('🔄 Daily Supabase keep-alive ping...');
+
+    try {
+      const { error } = await this.supabase.storage
+        .from(this.bucket)
+        .list('', { limit: 1 });
+
+      if (error) {
+        this.logger.warn('⚠️ Failed to access Supabase bucket: ' + error.message);
+      } else {
+        this.logger.log('✅ Supabase Storage accessed successfully (keep-alive).');
+      }
+    } catch (err) {
+      this.logger.error('❌ Unexpected error during keep-alive:', err);
+    }
+  }
+
 
   async uploadFile(file: Express.Multer.File): Promise<string> {
     const key = `${randomUUID()}${extname(file.originalname)}`;
