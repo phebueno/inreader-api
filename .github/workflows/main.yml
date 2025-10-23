@@ -3,7 +3,12 @@ name: Frequent API ping
 on:
   schedule:
     - cron: '*/30 * * * *'  # a cada 30 minutos
-  workflow_dispatch:  # permite disparar manualmente
+  workflow_dispatch:
+    inputs:
+      check_description:
+        description: 'Descrição opcional para o check manual'
+        required: false
+        default: ''
 
 jobs:
   ping-api:
@@ -19,7 +24,12 @@ jobs:
       - name: Analyze status
         run: |
           STATUS="${{ steps.ping.outputs.status }}"
+          INPUT_DESC="${{ github.event.inputs.check_description }}"
           echo "HTTP status code: $STATUS"
+
+          if [[ -n "$INPUT_DESC" ]]; then
+            echo "Check description: $INPUT_DESC"
+          fi
 
           if [[ "$STATUS" == "200" ]]; then
             echo "✅ API is up!"
