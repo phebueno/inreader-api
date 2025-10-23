@@ -1,4 +1,4 @@
-name: Frequent API ping
+name: Frequent API ping with retry and login
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       check_description:
-        description: 'Descrição opcional para o check manual'
+        description: 'Descrição opcional para execução manual'
         required: false
         default: ''
 
@@ -15,26 +15,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send empty POST to check status
+      - name: Send POST with JSON body and handle errors
         id: ping
         run: |
-          HTTP_STATUS=$(curl -X POST -o /dev/null -s -w "%{http_code}" https://inreader-api.onrender.com/auth/login)
-          echo "status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+          MAX_RETRIES=4   # 4 retries + 1 tentativa inicial = 5 no total
+          RETRY_DELAY=120  # segundos (2 min)
+          ATTEMPT=0
 
-      - name: Analyze status
-        run: |
-          STATUS="${{ steps.ping.outputs.status }}"
-          INPUT_DESC="${{ github.event.inputs.check_description }}"
-          echo "HTTP status code: $STATUS"
+          EMAIL="teste@teste.com"
+          PASSWORD="senha_secreta"
+          
+          while [ $ATTEMPT -le $MAX_RETRIES ]; do
+            HTTP_STATUS=$(curl -X POST \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" \
+              -o /dev/null -s -w "%{http_code}" \
+              https://inreader-api.onrender.com/auth/login)
 
-          if [[ -n "$INPUT_DESC" ]]; then
-            echo "Check description: $INPUT_DESC"
-          fi
+            echo "Attempt $((ATTEMPT+1)): HTTP status code = $HTTP_STATUS"
+            
+            if [[ "$HTTP_STATUS" == "200" ]]; then
+              echo "✅ Login OK!"
+              exit 0
+            elif [[ "$HTTP_STATUS" == "401" ]]; then
+              echo "⚠️ Unauthorized, reached DB."
+              exit 0
+            else
+              echo "❌ API returned error $HTTP_STATUS"
+              if [ $ATTEMPT -lt $MAX_RETRIES ]; then
+                echo "⏳ Retrying in $RETRY_DELAY seconds..."
+                sleep $RETRY_DELAY
+              else
+                echo "🚨 Max attempts reached, stopping workflow."
+                exit 1
+              fi
+            fi
 
-          if [[ "$STATUS" == "200" ]]; then
-            echo "✅ API is up!"
-          elif [[ "$STATUS" == "401" ]]; then
-            echo "⚠️ Unauthorized – POST recebido sem credenciais."
-          else
-            echo "❌ API returned an error."
-          fi
+            ATTEMPT=$((ATTEMPT+1))
+          done
