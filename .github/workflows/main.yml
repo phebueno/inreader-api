@@ -1,0 +1,30 @@
+name: Frequent API ping
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # a cada 30 minutos
+  workflow_dispatch:  # permite disparar manualmente
+
+jobs:
+  ping-api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send empty POST to check status
+        id: ping
+        run: |
+          HTTP_STATUS=$(curl -X POST -o /dev/null -s -w "%{http_code}" https://inreader-api.onrender.com/auth/login)
+          echo "status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+
+      - name: Analyze status
+        run: |
+          STATUS="${{ steps.ping.outputs.status }}"
+          echo "HTTP status code: $STATUS"
+
+          if [[ "$STATUS" == "200" ]]; then
+            echo "✅ API is up!"
+          elif [[ "$STATUS" == "401" ]]; then
+            echo "⚠️ Unauthorized – POST recebido sem credenciais."
+          else
+            echo "❌ API returned an error."
+          fi
